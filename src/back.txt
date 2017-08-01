@@ -1,0 +1,87 @@
+/
+#include "TB6612.h"
+#include "encoders.h"
+
+TB6612 driver (16, 15, 20, 21, 22, 23, 17);
+
+int enc1_m1 = 0;
+int enc1_m2 = 1;
+int enc2_m1 = 2;
+int enc2_m2 = 3;
+
+unsigned int rpm = 0;           // Revoluciones por minuto calculadas.
+float velocity = 0;                 //Velocidad en [Km/h]
+volatile byte pulses = 0;       // Número de pulsos leidos por el Arduino en un segundo
+unsigned long timeold = 0;  // Tiempo
+unsigned int pulsesperturn = 20; // Número de muescas que tiene el disco del encoder.
+const int wheel_diameter = 64;   // Diámetro de la rueda pequeña[mm]
+static volatile unsigned long debounce = 0; // Tiempo del rebote.
+
+void setup() {
+  // initialize digital pin LED_BUILTIN as an output.
+  Serial.begin(9600); // Configuración del puerto serie
+  setupInterrupts();
+
+
+  pinMode(13, OUTPUT);
+  pinMode(9, OUTPUT);
+
+  digitalWrite(13, HIGH);
+  /*digitalWrite(9, HIGH);
+  delay(100);
+  digitalWrite(9, LOW);
+  delay(200);
+  digitalWrite(9, HIGH);
+  delay(100);
+  digitalWrite(9, LOW);
+  delay(200);
+  digitalWrite(9, HIGH);
+  delay(100);
+  digitalWrite(9, LOW);*/
+  delay(500);
+  driver.forward(100,100,0);
+
+
+  /*while (readDistance()>-100) {
+    updateEncoderData();
+    //digitalWrite(9, HIGH);   // turn the LED on (HIGH is the voltage level)
+
+
+
+    Serial.println(readDistance());
+
+    delay(100);
+  }*/
+
+}
+
+
+// the loop function runs over and over again forever
+void loop() {
+  //driver.forward(100, 100,100);
+  //driver.rotate(50, 100);
+  updateEncoderData();
+  Serial.println(readDistance());
+  if (readDistance()>= 1000){
+    driver.brake(0);
+  }
+
+  delay(10);
+  /*
+  //digitalWrite(9, HIGH);   // turn the LED on (HIGH is the voltage level)
+  digitalWrite(13, HIGH);   // turn the LED on (HIGH is the voltage level)
+  driver.forward(50,50,500);
+
+
+
+
+
+  digitalWrite(13, LOW);   // turn the LED on (HIGH is the voltage level)
+  driver.reverse(50,50,500);
+
+  driver.rotate(50, 500);
+
+  driver.rotate(50, -500);
+  */
+
+}
