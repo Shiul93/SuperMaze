@@ -16,9 +16,9 @@ int encoderL2Pin = encoderL2;
 //7.540960147 encoder ticks/mm
 //double countsPer360 = 2057.196;
 
-double mmPerTick  = 0.835;
-double ticksPerMM = 1.32;
-double countsPer360 = 240;
+double mmPerTick  = 1/(1.85);
+double ticksPerMM = 1.85;
+double countsPer360 = 204;
 
 volatile long encoderR = 0;
 volatile long encoderL = 0;
@@ -90,7 +90,7 @@ void updateEncoderData(){
   encoderLTick = encoderLin - oldEncoderLin;
 
   distance_mm = mmPerTick * (encoderRin + encoderLin) / 2;
-  distance_deg = (360/countsPer360) * (encoderRin - encoderLin) / 2;
+  distance_deg = (360/countsPer360) * (encoderRin - encoderLin) / 4;
   //distance_deg = COUNTS_TO_DEG((encoderRin - encoderLin) / 2);
 }
 

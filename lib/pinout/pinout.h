@@ -28,6 +28,10 @@ extern int sensor_rst2;
 extern int sensor_rst3;
 extern int sensor_rst4;
 
+//Buttons
+extern int button1;
+extern int button2;
+
 extern void setupPins();
 
 #endif

@@ -24,10 +24,14 @@ int encoderL1 = 2;
 int encoderL2 = 3;
 
 //TOF Sensors
-int sensor_rst1 = 8;
-int sensor_rst2 = 10;
-int sensor_rst3 = 11;
-int sensor_rst4 = 12;
+int sensor_rst1 = 5;
+int sensor_rst2 = 6;
+int sensor_rst3 = 7;
+int sensor_rst4 = 8;
+
+//Buttons
+int button1 = 13;
+int button2 = 14;
 
 void setupPins() {
   pinMode(driver_PWMA,OUTPUT);
@@ -51,6 +55,9 @@ void setupPins() {
   pinMode(sensor_rst2,OUTPUT);
   pinMode(sensor_rst3,OUTPUT);
   pinMode(sensor_rst4,OUTPUT);
+
+  pinMode(button1,INPUT_PULLUP);
+  pinMode(button2,INPUT_PULLUP);
 
   digitalWrite(led_pin, HIGH);
 
