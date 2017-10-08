@@ -32,6 +32,10 @@ extern int sensor_rst4;
 extern int button1;
 extern int button2;
 
+//Neopixel
+
+extern int neopixel;
+
 extern void setupPins();
 
 #endif

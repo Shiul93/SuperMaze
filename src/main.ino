@@ -1,128 +1,92 @@
 #include "arduino.h"
 #include "main.h"
-#include "pinout.h"
-#include "motors.h"
-#include "encoders.h"
-#include "sensors.h"
-#include "screen.h"
-//#include "profiler.h"
-#include "speedController.h"
-
-#include "elapsedMillis.h"
-#include "IntervalTimer.h"
-#include "TB6612.h"
-
 #include <SPI.h>
 #include <Wire.h>
-#include <Adafruit_GFX.h>
+#include "pinout.h"
+#include "TB6612.h"
+#include "motors.h"
+#include "encoders.h"
+#include "elapsedMillis.h"
+#include "IntervalTimer.h"
+#include <Adafruit_NeoPixel.h>
+#include "screen.h"
+#include "MadgwickAHRS.h"
+#include <ADXL345.h>
 
 
 
 IntervalTimer encoderRefresh;
-
-
-
-
+IntervalTimer heartbeat;
+IntervalTimer sysTimer;
 unsigned long sysTickCounts = 0;
 elapsedMicros systickMicros;
-
-IntervalTimer sysTimer;
 unsigned int sysTickMilisPeriod = 100;
 unsigned int sysTickSecond = 1000/sysTickMilisPeriod;
 
+int hb = 0;
+
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(2, 8);
+ADXL345 adxl;
 bool activateController = false;
 
 void sysTick() {
   systickMicros =0;
-  //readSensors();
-  updateEncoderData();
-  if(activateController)
-  {
-    PIDcontroller();
-    motorSpeedUpdate(RSpeedOUT,LSpeedOUT);
-  }
-  else
-  {
-  }
   sysTickCounts++;
 
 }
 
+void setup(){
 
-
-void setup() {
   Serial.begin(9600);
-  Serial1.begin(9600);
-
-  setupScreen();
-
-  setupPins();
-  digitalWrite(9, HIGH);
-  delay(100);
-  digitalWrite(9, LOW);
-  delay(100);
-  digitalWrite(9, HIGH);
-  delay(100);
-  digitalWrite(9, LOW);
-  delay(100);
-  digitalWrite(9, HIGH);
-  delay(100);
-  digitalWrite(9, LOW);
-  delay(100);
-  digitalWrite(9, HIGH);
-  delay(100);
-  digitalWrite(9, LOW);
-  delay(100);
-
-  //setupSensors();
-  analogWriteResolution(16);         // analogWrite value 0 to 65535
-  analogWriteFrequency(driver_PWMA, 732.4218); // Teensy 3.0 pin 4 also changes to 732.4218 kHz
-  analogWriteFrequency(driver_PWMB, 732.4218);
-
+  Serial1.begin(115200);
+  Serial1.println("----------BEGIN BT---------");
   setupInterrupts();
-  setupDistanceSensors();
-  delay(500);
+  adxl.powerOn();
+  strip.begin();
+  strip.setPixelColor(0, 10, 0, 0);
+  strip.setPixelColor(1, 10, 0, 0);
+  strip.show();
 
-
-  delay(1000);
   sysTimer.begin(sysTick, sysTickMilisPeriod*100);
 
 
 
 }
+void encoderFun(){
+  updateEncoderData();
+  Serial.printf("Enc L: %i, Enc R: %i, Distance %i, Angle %i \n",encoderL,encoderR,readDistance(),readAngle());
+  Serial1.printf("Enc L: %i, Enc R: %i, Distance %i, Angle %i \n",encoderL,encoderR,readDistance(),readAngle());
 
-
-/*void loop() {
-  /*
-  if(sysTickCounts > 0)                 {RSpeedSet = 25; LSpeedSet = 25;}
-  if(sysTickCounts > 1*sysTickSecond)   {RSpeedSet = 40; LSpeedSet = 40;}
-  if(sysTickCounts > 2*sysTickSecond)   {RSpeedSet = 25; LSpeedSet = 25;}
-  if(sysTickCounts > 3*sysTickSecond)   {RSpeedSet = 0; LSpeedSet = 0;}
-  if(sysTickCounts > 4*sysTickSecond)   {RSpeedSet = 70; LSpeedSet = 70;}
+}
+void loop(){
+  if(sysTickCounts > 0)                 {}
+  if(sysTickCounts > 1*sysTickSecond)   {}
+  if(sysTickCounts > 2*sysTickSecond)   {}
+  if(sysTickCounts > 3*sysTickSecond)   {}
+  if(sysTickCounts > 4*sysTickSecond)   {}
   //if(sysTickCounts > (4*sysTickSecond)) {sysTimer.end();}
 
   if(sysTickCounts>= 10)
   {
-    //serialDebug();
-    //checkBattery();
-    //Serial.printf("Enc L: %i, Enc R: %i, Distance %i, Angle %i \n",encoderL,encoderR,readDistance(),readAngle());
-    int dist = readDist();
 
-    if (dist >100){
-      motorSpeed(RLMOTOR, true, dist*100);
-    }else{
-      if (dist < 90) {
-        motorSpeed(RLMOTOR, false, dist*150);
-      }else{
-        motorCoast(RLMOTOR);
-      }
-    }
-    //serialDebug();
-    sysTickCounts = 0;
   }
+  //  gyro.read();
+  //  delay(100);
+  if(sysTickCounts>= 100000){
+    Serial1.println(sysTickCounts);
+    Serial.println(sysTickCounts);
 
 
 
+  }
+  int x,y,z;
+  adxl.readAccel(&x, &y, &z); //read the accelerometer values and store them in variables  x,y,z
 
-
-}*/
+  // Output x,y,z values - Commented out
+  Serial.print(x);
+  Serial.print(" ");
+  Serial.print(y);
+  Serial.print(" ");
+  Serial.println(z);
+  delay(100);
+}

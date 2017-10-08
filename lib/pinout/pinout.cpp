@@ -10,7 +10,7 @@ int driver_BIN2 = 21;
 int driver_STBY = 17;
 
 //Buzzer
-int buzzer_pin = 9;
+int buzzer_pin = 13;
 
 //LED_BUILTIN
 int led_pin = 13;
@@ -18,20 +18,22 @@ int led_pin = 13;
 
 
 //Encoders
-int encoderR1 = 0;
-int encoderR2 = 1;
-int encoderL1 = 2;
+int encoderR1 = 2;
+int encoderR2 = 5;
+int encoderL1 = 4;
 int encoderL2 = 3;
 
 //TOF Sensors
-int sensor_rst1 = 5;
-int sensor_rst2 = 6;
-int sensor_rst3 = 7;
-int sensor_rst4 = 8;
+int sensor_rst1 = 9;
+int sensor_rst2 = 10;
+int sensor_rst3 = 11;
+int sensor_rst4 = 12;
 
 //Buttons
-int button1 = 13;
-int button2 = 14;
+int button1 = 6;
+int button2 = 7;
+
+int neopixel = 8;
 
 void setupPins() {
   pinMode(driver_PWMA,OUTPUT);
@@ -56,9 +58,14 @@ void setupPins() {
   pinMode(sensor_rst3,OUTPUT);
   pinMode(sensor_rst4,OUTPUT);
 
-  pinMode(button1,INPUT_PULLUP);
-  pinMode(button2,INPUT_PULLUP);
+  //pinMode(button1,INPUT_PULLUP);
+  //pinMode(button2,INPUT_PULLUP);
 
-  digitalWrite(led_pin, HIGH);
+  //digitalWrite(led_pin, HIGH);
+
+  pinMode(neopixel,OUTPUT);
+
+  
+
 
 }
