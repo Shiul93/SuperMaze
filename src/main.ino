@@ -14,17 +14,22 @@
 
 
 
-VL53L0X laser1,laser2, laser3, laser4;
+VL53L0X laserFL,laserCL, laserCR, laserFR;
 
+int distFL, distCL, distCR, distFR;
 
-
+int meanIndex = 0;
+int distFLarray[] = {0,0,0};
+int distCLarray[] = {0,0,0};
+int distCRarray[] = {0,0,0};
+int distFRarray[] = {0,0,0};
 
 
 
 IntervalTimer sysTimer;
 unsigned long sysTickCounts = 0;
 elapsedMicros systickMicros;
-unsigned int sysTickMilisPeriod = 100;
+unsigned int sysTickMilisPeriod =  10;
 unsigned int sysTickSecond = 1000/sysTickMilisPeriod;
 
 int hb = 0;
@@ -32,9 +37,33 @@ int hb = 0;
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(2, 8);
 bool activateController = false;
 
+void updateDistances(){
+
+
+  distFL = laserFL.readRangeContinuousMillimeters();
+  distCL = laserCL.readRangeContinuousMillimeters();
+  distCR = laserCR.readRangeContinuousMillimeters();
+  distFR = laserFR.readRangeContinuousMillimeters();
+  distFLarray[meanIndex] = (distFL<1200)? distFL : 0;
+  distCLarray[meanIndex] = (distCL<1200)? distCL : 0;
+  distCRarray[meanIndex] = (distCR<1200)? distCR : 0;
+  distFRarray[meanIndex] = (distFR<1200)? distFR : 0;
+  distFL = (distFLarray[0]+distFLarray[1]+distFLarray[2])/3;
+  distCL = (distCLarray[0]+distCLarray[1]+distCLarray[2])/3;
+  distCR = (distCRarray[0]+distCRarray[1]+distCRarray[2])/3;
+  distFR = (distFRarray[0]+distFRarray[1]+distFRarray[2])/3;
+  meanIndex++;
+  meanIndex = meanIndex%3;
+
+
+}
+
 void sysTick() {
   systickMicros =0;
+
+
   sysTickCounts++;
+
 
 }
 
@@ -58,12 +87,12 @@ void setup(){
   setupDistanceSensors();
   delay(100);
 
-  sysTimer.begin(sysTick, sysTickMilisPeriod*100);
+  sysTimer.begin(sysTick, sysTickMilisPeriod);
 
-  laser1.startContinuous();
-  laser2.startContinuous();
-  laser3.startContinuous();
-  laser4.startContinuous();
+  laserFL.startContinuous();
+  laserCL.startContinuous();
+  laserCR.startContinuous();
+  laserFR.startContinuous();
 
 
 
@@ -78,48 +107,50 @@ void encoderFun(){
 
 }
 void loop(){
-  if(sysTickCounts > 0)                 {}
-  if(sysTickCounts > 1*sysTickSecond)   {
-  }
-  if(sysTickCounts > 2*sysTickSecond)   {}
-  if(sysTickCounts > 3*sysTickSecond)   {}
-  if(sysTickCounts > 4*sysTickSecond)   {}
-  //if(sysTickCounts > (4*sysTickSecond)) {sysTimer.end();}
 
-  if(sysTickCounts>= 10)
+
+  if(sysTickCounts>= 5*sysTickMilisPeriod)
   {
+    //encoderFun();
+    updateDistances();
+    sysTickCounts = 0;
+    followBehavior();
+    //encoderFun();
+
+
 
   }
-  //  gyro.read();
-  //  delay(100);
-  if(sysTickCounts>= 10000){
-
-
-
-  }
-
-
-  Serial.print("FL: ");
-
-  Serial.print(laser1.readRangeContinuousMillimeters());
-  Serial.print(" CL: ");
-
-  Serial.print(laser2.readRangeContinuousMillimeters());
-  Serial.print(" CR: ");
-
-  Serial.print(laser3.readRangeContinuousMillimeters());
-  Serial.print(" FL: ");
-
-  Serial.print(laser4.readRangeContinuousMillimeters());
-
-
-  Serial.println();
 
 
 
 }
 
+void followBehavior(){
+  int error = distCL-distCR;
+  Serial.println(error);
+  if (abs(error)>100){
+    motorSpeed(RMOTOR, (error>0), abs(error)/10);
+  motorSpeed(LMOTOR, (error<=0), abs(error)/10);
+}else{
+  motorSpeed(RLMOTOR, (error>0), 0);
+}
 
+
+}
+
+
+void printDistances(){
+  Serial.print("FL: ");
+  Serial.print(distFL);
+  Serial.print(" CL: ");
+  Serial.print(distCL);
+  Serial.print(" CR: ");
+  Serial.print(distCR);
+  Serial.print(" FL: ");
+  Serial.print(distFL);
+
+  Serial.println();
+}
 
 
 void setupDistanceSensors() {
@@ -139,29 +170,29 @@ void setupDistanceSensors() {
 
   pinMode(sensor_rst1, INPUT);
   delay(150);
-  laser1.init(true);
+  laserFL.init(true);
   delay(100);
-  laser1.setAddress((uint8_t)22);
+  laserFL.setAddress((uint8_t)22);
 
   pinMode(sensor_rst2, INPUT);
   delay(150);
-  laser2.init(true);
+  laserCL.init(true);
   delay(100);
-  laser2.setAddress((uint8_t)25);
+  laserCL.setAddress((uint8_t)25);
 
   pinMode(sensor_rst3, INPUT);
   delay(150);
-  laser3.init(true);
+  laserCR.init(true);
   delay(100);
-  laser3.setAddress((uint8_t)28);
+  laserCR.setAddress((uint8_t)28);
 
   pinMode(sensor_rst4, INPUT);
   delay(150);
-  laser4.init(true);
+  laserFR.init(true);
   delay(100);
-  laser4.setAddress((uint8_t)31);
+  laserFR.setAddress((uint8_t)31);
 
-  laser1.setTimeout(500);
-  laser2.setTimeout(500);
-  laser3.setTimeout(500);
-  laser4.setTimeout(500); }
+  laserFL.setTimeout(500);
+  laserCL.setTimeout(500);
+  laserCR.setTimeout(500);
+  laserFR.setTimeout(500); }

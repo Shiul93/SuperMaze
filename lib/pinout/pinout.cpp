@@ -19,9 +19,9 @@ int led_pin = 13;
 
 //Encoders
 int encoderR1 = 2;
-int encoderR2 = 5;
-int encoderL1 = 4;
-int encoderL2 = 3;
+int encoderR2 = 3;
+int encoderL1 = 5;
+int encoderL2 = 4;
 
 //TOF Sensors
 int sensor_rst1 = 9;
@@ -65,7 +65,7 @@ void setupPins() {
 
   pinMode(neopixel,OUTPUT);
 
-  
+
 
 
 }
