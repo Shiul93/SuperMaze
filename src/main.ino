@@ -10,13 +10,17 @@
 #include "IntervalTimer.h"
 #include <Adafruit_NeoPixel.h>
 #include "screen.h"
-#include "MadgwickAHRS.h"
-#include <ADXL345.h>
+#include <VL53L0X.h>
 
 
 
-IntervalTimer encoderRefresh;
-IntervalTimer heartbeat;
+VL53L0X laser1,laser2, laser3, laser4;
+
+
+
+
+
+
 IntervalTimer sysTimer;
 unsigned long sysTickCounts = 0;
 elapsedMicros systickMicros;
@@ -26,7 +30,6 @@ unsigned int sysTickSecond = 1000/sysTickMilisPeriod;
 int hb = 0;
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(2, 8);
-ADXL345 adxl;
 bool activateController = false;
 
 void sysTick() {
@@ -36,18 +39,34 @@ void sysTick() {
 }
 
 void setup(){
+  Wire.begin();
 
+  delay(1000);
   Serial.begin(9600);
+  delay(1000);
+
+  Serial.println("----- BEGIN SERIAL -----");
   Serial1.begin(115200);
   Serial1.println("----------BEGIN BT---------");
   setupInterrupts();
-  adxl.powerOn();
   strip.begin();
-  strip.setPixelColor(0, 10, 0, 0);
-  strip.setPixelColor(1, 10, 0, 0);
+  strip.setPixelColor(0, 10, 0, 10);
+  strip.setPixelColor(1, 10, 0, 10);
   strip.show();
 
+  setupScreen();
+  setupDistanceSensors();
+  delay(100);
+
   sysTimer.begin(sysTick, sysTickMilisPeriod*100);
+
+  laser1.startContinuous();
+  laser2.startContinuous();
+  laser3.startContinuous();
+  laser4.startContinuous();
+
+
+
 
 
 
@@ -60,7 +79,8 @@ void encoderFun(){
 }
 void loop(){
   if(sysTickCounts > 0)                 {}
-  if(sysTickCounts > 1*sysTickSecond)   {}
+  if(sysTickCounts > 1*sysTickSecond)   {
+  }
   if(sysTickCounts > 2*sysTickSecond)   {}
   if(sysTickCounts > 3*sysTickSecond)   {}
   if(sysTickCounts > 4*sysTickSecond)   {}
@@ -72,21 +92,76 @@ void loop(){
   }
   //  gyro.read();
   //  delay(100);
-  if(sysTickCounts>= 100000){
-    Serial1.println(sysTickCounts);
-    Serial.println(sysTickCounts);
+  if(sysTickCounts>= 10000){
 
 
 
   }
-  int x,y,z;
-  adxl.readAccel(&x, &y, &z); //read the accelerometer values and store them in variables  x,y,z
 
-  // Output x,y,z values - Commented out
-  Serial.print(x);
-  Serial.print(" ");
-  Serial.print(y);
-  Serial.print(" ");
-  Serial.println(z);
-  delay(100);
+
+  Serial.print("FL: ");
+
+  Serial.print(laser1.readRangeContinuousMillimeters());
+  Serial.print(" CL: ");
+
+  Serial.print(laser2.readRangeContinuousMillimeters());
+  Serial.print(" CR: ");
+
+  Serial.print(laser3.readRangeContinuousMillimeters());
+  Serial.print(" FL: ");
+
+  Serial.print(laser4.readRangeContinuousMillimeters());
+
+
+  Serial.println();
+
+
+
 }
+
+
+
+
+void setupDistanceSensors() {
+  pinMode(sensor_rst1, OUTPUT);
+  pinMode(sensor_rst2, OUTPUT);
+  pinMode(sensor_rst3, OUTPUT);
+  pinMode(sensor_rst4, OUTPUT);
+
+  digitalWrite(sensor_rst1, LOW);
+  digitalWrite(sensor_rst2, LOW);
+  digitalWrite(sensor_rst3, LOW);
+  digitalWrite(sensor_rst4, LOW);
+
+
+  delay(500);
+  //Wire.begin();
+
+  pinMode(sensor_rst1, INPUT);
+  delay(150);
+  laser1.init(true);
+  delay(100);
+  laser1.setAddress((uint8_t)22);
+
+  pinMode(sensor_rst2, INPUT);
+  delay(150);
+  laser2.init(true);
+  delay(100);
+  laser2.setAddress((uint8_t)25);
+
+  pinMode(sensor_rst3, INPUT);
+  delay(150);
+  laser3.init(true);
+  delay(100);
+  laser3.setAddress((uint8_t)28);
+
+  pinMode(sensor_rst4, INPUT);
+  delay(150);
+  laser4.init(true);
+  delay(100);
+  laser4.setAddress((uint8_t)31);
+
+  laser1.setTimeout(500);
+  laser2.setTimeout(500);
+  laser3.setTimeout(500);
+  laser4.setTimeout(500); }
