@@ -17,7 +17,7 @@ bool useSensors = false;
 void PIDcontroller(){
   int rightError = 0;
   int leftError = 0;
-  /*
+
   //sensor aligment error
   if(useSensors)
   {
@@ -25,7 +25,7 @@ void PIDcontroller(){
     rightError += sensorFeedback;
     leftError  -= sensorFeedback;
   }
-  */
+  
 
   //speed error
   leftError +=  (LSpeedSet - encoderLTick);

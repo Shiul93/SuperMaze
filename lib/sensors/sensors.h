@@ -2,10 +2,12 @@
 #define SENSORS_H
 
 #include "Arduino.h"
-#include <VL53L0X.h>
+#include "MPU9250.h"
 
 
 
-extern int measureDistance();
-extern void setupDistanceSensors();
+
+void startIMU();
+void readAccelValues(float * coords);
+void readGyroValues(float * coords);
 #endif

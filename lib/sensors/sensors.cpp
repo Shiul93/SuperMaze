@@ -1,54 +1,33 @@
 #include "sensors.h"
 #include "pinout.h"
 
-VL53L0X laser1,laser2, laser3, laser4;
+MPU9250 imu;
 
+void startIMU(){
+  imu.MPU9250SelfTest(imu.SelfTest);
+  imu.calibrateMPU9250(imu.gyroBias, imu.accelBias);
+  imu.initMPU9250();
 
+}
 
-void setupDistanceSensors() {
-  pinMode(sensor_rst1, OUTPUT);
-  pinMode(sensor_rst2, OUTPUT);
-  pinMode(sensor_rst3, OUTPUT);
-  pinMode(sensor_rst4, OUTPUT);
+void readAccelValues(float * coords){
+  imu.readAccelData(imu.accelCount);  // Read the x/y/z adc values
+  imu.getAres();
 
-  digitalWrite(sensor_rst1, LOW);
-  digitalWrite(sensor_rst2, LOW);
-  digitalWrite(sensor_rst3, LOW);
-  digitalWrite(sensor_rst4, LOW);
+  // Now we'll calculate the accleration value into actual g's
+  // This depends on scale being set
+  coords[0] = (float)imu.accelCount[0]*imu.aRes; // - accelBias[0];
+  coords[1] = (float)imu.accelCount[1]*imu.aRes; // - accelBias[1];
+  coords[2] = (float)imu.accelCount[2]*imu.aRes; // - accelBias[2];
+}
 
+void readGyroValues(float * coords) {
+  imu.readGyroData(imu.gyroCount);  // Read the x/y/z adc values
+  imu.getGres();
 
-  delay(500);
-  //Wire.begin();
-
-  pinMode(sensor_rst1, INPUT);
-  delay(150);
-  laser1.init(true);
-  delay(100);
-  laser1.setAddress((uint8_t)22);
-
-  pinMode(sensor_rst2, INPUT);
-  delay(150);
-  laser2.init(true);
-  delay(100);
-  laser2.setAddress((uint8_t)25);
-
-  pinMode(sensor_rst3, INPUT);
-  delay(150);
-  laser3.init(true);
-  delay(100);
-  laser3.setAddress((uint8_t)28);
-
-  pinMode(sensor_rst4, INPUT);
-  delay(150);
-  laser4.init(true);
-  delay(100);
-  laser4.setAddress((uint8_t)31);
-
-  laser1.setTimeout(500);
-  laser2.setTimeout(500);
-  laser3.setTimeout(500);
-  laser4.setTimeout(500); }
-
-int measureDistance() {
-  return 0;
+  // Calculate the gyro value into actual degrees per second
+  // This depends on scale being set
+  coords[0] = (float)imu.gyroCount[0]*imu.gRes;
+  coords[1] = (float)imu.gyroCount[1]*imu.gRes;
+  coords[2] = (float)imu.gyroCount[2]*imu.gRes;
 }

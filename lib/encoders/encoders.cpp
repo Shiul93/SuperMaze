@@ -132,3 +132,6 @@ int readAngle(){
 void checkBattery(){
 
 }
+int getAligmentError(){
+  return encoderL - encoderR;
+}
