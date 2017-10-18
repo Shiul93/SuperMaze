@@ -17,11 +17,29 @@
 
 
 int distFL, distCL, distCR, distFR;
+double  errP, errI, errD, lastErr, lastErrL, lastErrR = 0;
 
-int errP, errI, errD, lastErr = 0;
+bool completed = true;
 
 double pid_err_print;
-double kp, ki, kd = 0;
+double g_kp, g_ki, g_kd = 0; //Gyro pid
+double w_kp, w_ki, w_kd = 0; //Wall follow pid
+double d_kp, d_ki, d_kd = 0; //Distance pid
+double s_kp, s_ki, s_kd = 0; //Speed pid
+
+
+int almost_checks = 20;
+int almost_count = 0;
+bool almost = false;
+
+long lastTickL = 0;
+long lastTickR = 0;
+double speedL = 0;
+double speedR = 0;
+long lastSpeedCheck = 0;
+int lastSpeedSetL = 0;
+int lastSpeedSetR = 0;
+
 
 
 int meanIndex = 0;
@@ -44,7 +62,8 @@ unsigned int sysTickSecond = 1000/sysTickMilisPeriod;
 
 unsigned int longCount = 0;
 unsigned int mediumCount = 0;
-char screenShow = 'p';
+char screenShow = 'e';
+char activeBehavior = 'o';
 
 int hb = 0;
 
@@ -90,15 +109,24 @@ void sysTick() {
 
 void setup(){
 
-  /*kp = 0.27;
-  ki = 0.01;
-  kd = 0.02;*///followBehavior
+  w_kp = 0.27;
+  w_ki = 0.01;
+  w_kd = 0.02;
 
-  kp = 0.45 ;
-  ki = 0.05;
-  kd = 0.05;
+  g_kp = 0.50 ;
+  g_ki = 0.05;
+  g_kd = 0.07;
+
+  d_kp = 0.3 ;
+  d_ki = 0.05;
+  d_kd = 0.15;
+
+  s_kp = 50 ;
+  s_ki = 0;
+  s_kd = 10;
   Wire.begin();
   setupScreen();
+  //setupPins();
 
 
   delay(1000);
@@ -115,9 +143,22 @@ void setup(){
   displayString("Starting Leds");
 
   strip.begin();
-  strip.setPixelColor(0, 10, 0, 10);
-  strip.setPixelColor(1, 10, 0, 10);
+  strip.setPixelColor(0, 10, 0, 0);
+  strip.setPixelColor(1, 10, 0, 0);
   strip.show();
+  delay(500);
+  strip.setPixelColor(0, 0, 10, 0);
+  strip.setPixelColor(1, 0, 10, 0);
+  strip.show();
+  delay(500);
+  strip.setPixelColor(0, 0, 0, 10);
+  strip.setPixelColor(1, 0, 0, 10);
+  strip.show();
+  delay(500);
+  strip.setPixelColor(0, 0, 0, 0);
+  strip.setPixelColor(1, 0, 0, 0);
+  strip.show();
+
   displayString("Starting Distance Sensors");
 
   setupDistanceSensors();
@@ -132,8 +173,18 @@ void setup(){
   startIMU();
 
 
-
+  digitalWrite(buzzer_pin, HIGH);
   delay(100);
+  digitalWrite(buzzer_pin, LOW);
+  delay(100);
+  digitalWrite(buzzer_pin, HIGH);
+  delay(100);
+  digitalWrite(buzzer_pin, LOW);
+  delay(100);
+  displayString("Startup OK");
+
+
+
   updateDistances();
 
 
@@ -156,12 +207,25 @@ void loop(){
   {
     encoderFun();
     updateDistances();
+    checkSpeed();
     readAccelValues(accelArray);
     readGyroValues(gyroArray);
 
     sysTickCounts = 0;
     //followBehavior(kp,ki,kd);
-    gyroBehavior(kp,ki,kd);
+    if (activeBehavior == 'g'){
+      gyroBehavior(g_kp,g_ki,g_kd);
+    }else if (activeBehavior == 'w'){
+      followBehavior(w_kp,w_ki,w_kd);
+    }else if (activeBehavior == 'd'){
+      if (!completed){
+        distanceBehavior(300,readDistance(),d_kp,d_ki,d_kd);
+      }
+    }else if (activeBehavior == 's'){
+      speedBehavior(0.2,s_kp,s_ki,s_kd);
+    }else {
+      motorCoast(RLMOTOR);
+    }
 
     //encoderFun();
 
@@ -173,28 +237,66 @@ void loop(){
   {
     mediumCount = 0;
     if (screenShow == 'p'){
-      displayPID(kp*errP,ki*errI, kd*errD, pid_err_print);
+      if (activeBehavior == 'g'){
+        displayPID(g_kp*errP,g_ki*errI, g_kd*errD, pid_err_print);
+      }else if (activeBehavior == 'w'){
+        displayPID(w_kp*errP,w_ki*errI, w_kd*errD, pid_err_print);
+      }else if (activeBehavior == 'd'){
+        displayPID(d_kp*errP,d_ki*errI, d_kd*errD, pid_err_print);
+      }else if (activeBehavior == 's'){
+        displayPID(s_kp*errP,s_ki*errI, s_kd*errD, pid_err_print);
+      }
     }else  if (screenShow =='e'){
-      displayENC(encoderR,encoderL,readDistance(), readAngle());
+      displayENC(encoderR,encoderL,readDistance(), readAngle(), speedR, speedL);
     } else {
       displayGyro(gyroArray);
     }
   }
 
-  if(longCount>= 1000*sysTickMilisPeriod)//3200ms
+  if(longCount>= (1000/3)*sysTickMilisPeriod)//3200ms
   {
   longCount = 0;
   if (Serial1.available()){
+    strip.setPixelColor(0, 0, 0, 10);
+    strip.setPixelColor(1, 0, 0, 10);
+    strip.show();
+    delay(100);
+    strip.setPixelColor(0, 0, 0, 0);
+    strip.setPixelColor(1, 0, 0, 0);
+    strip.show();
     String read = Serial1.readString(1);
     if (read =='p'){
       screenShow = 'p';
     }else if (read =='e'){
       screenShow = 'e';
-    }else{
-      //screenShow = 'a';
-
+    }else if (read =='a'){
+      screenShow = 'a';
+    }else if (read =='g'){
+      screenShow = 'g';
+    }else if (read =='r'){
+      encoderReset();
     }
+    else if (read =='b'){
+      read = Serial1.readString(1);
+      if (read =='g'){
+        activeBehavior = 'g';
+      }else if (read =='s'){
+        activeBehavior = 's';
+      }else if (read =='w'){
+        activeBehavior = 'w';
+
+      }else if (read =='o'){
+        activeBehavior = 'o';
+
+      }else if (read = 'd'){
+        encoderReset();
+        completed = false;
+        activeBehavior = 'd';
+      }
+    }
+    Serial1.readString(2);
     Serial1.println("ACK");
+    Serial1.println(read);
 
   }
   //printDistances();
@@ -226,7 +328,7 @@ void followBehavior(double kp,double ki,double kd){
   //motorSpeed(RMOTOR, true, newerror);
   //motorSpeed(LMOTOR, true, newerror);
 }else{
-  motorSpeed(RLMOTOR, (error>0), 0);
+  motorBrake(RLMOTOR);
 }
 }
 
@@ -246,12 +348,87 @@ void gyroBehavior(double kp,double ki,double kd){
 
   if (abs(newerror) > 5){
 
-  motorSpeed(RMOTOR, (error>0), abs(newerror));
-  motorSpeed(LMOTOR, (error<=0), abs(newerror));
-}else{
-  motorSpeed(RLMOTOR, (error>0), 0);
+    motorSpeed(RMOTOR, (error>0), abs(newerror));
+    motorSpeed(LMOTOR, (error<=0), abs(newerror));
+  }else{
+    motorBrake(RLMOTOR);
+  }
+
 }
 
+
+void speedBehavior(double speed,double kp,double ki,double kd){
+  double errorL = speed-speedL;
+  errP = errorL;
+  errI = errI+errorL;
+  errI = ((errorL*errI)<0) ? 0 : errI;
+  errD = errorL-lastErrL;
+
+
+  lastErrL = errorL;
+  double pidErrL = kp*errP + ki*errI + kd*errD;
+  pid_err_print = pidErrL;
+  int newerrorL = lastSpeedSetL +  pidErrL;
+  lastSpeedSetL = newerrorL;
+
+
+  double errorR = speedL -speedR;
+  errP = errorR;
+  errI = errI+errorR;
+  errI = ((errorR*errI)<0) ? 0 : errI;
+  errD = errorR-lastErrR;
+
+
+  lastErrR = errorR;
+  double pidErrR = kp*errP + ki*errI + kd*errD;
+  pid_err_print = pidErrR;
+  int newerrorR = lastSpeedSetR +  pidErrR;
+  lastSpeedSetR = newerrorR;
+
+
+
+
+    motorSpeed(RMOTOR, (lastSpeedSetR>0), abs(newerrorR));
+    motorSpeed(LMOTOR, (lastSpeedSetL>0), abs(newerrorL));
+
+}
+
+void distanceBehavior(int mm,int distance, double kp,double ki,double kd){
+  completed = false;
+  almost = false;
+
+  int error = mm - distance;
+  errP = error;
+  errI = errI+error;
+  errI = ((error*errI)<0) ? 0 : errI;
+
+  errD = error-lastErr;
+
+
+  lastErr = error;
+  double pidErr = kp*errP + ki*errI + kd*errD;
+  pid_err_print = (abs(pidErr)> 30)? sign(pidErr)*30 : pidErr;
+  int newerror = (abs(pidErr)> 30)? sign(pidErr)*30 : pidErr;
+  newerror = (abs(pidErr)< 13)? sign(pidErr)*13 : pidErr;
+  newerror = (abs(pidErr)>50)? 50 : pidErr;
+
+
+  if (abs(newerror) > 3){
+
+  motorSpeed(RMOTOR, (error>0), abs(newerror));
+  motorSpeed(LMOTOR, (error>0), abs(newerror));
+  }else{
+    if (almost_count > almost_checks){
+      completed = true;
+      almost_count = 0;
+      motorBrake(RLMOTOR);
+
+    }else{
+      almost_count++;
+      motorSpeed(RMOTOR, (error>0), abs(newerror));
+      motorSpeed(LMOTOR, (error>0), abs(newerror));
+    }
+}
 }
 
 
@@ -268,6 +445,24 @@ void printDistances(){
   Serial.println();
 }
 
+void checkSpeed(){
+
+  //TODO Comprobar direccion
+  long check = millis();
+  double time_elapsed = check - lastSpeedCheck;
+  lastSpeedCheck = check;
+
+  int encCheck = encoderL;
+  int direction = (lastTickL < encCheck) ? 1 : -1;
+  speedL = direction * abs(abs(lastTickL)-abs(encCheck))/(time_elapsed);
+  lastTickL = encCheck;
+
+  encCheck = encoderR;
+  direction = (lastTickR < encCheck) ? 1 : -1;
+  speedR = direction * abs(abs(lastTickR)-abs(encoderR))/(time_elapsed);
+  lastTickR = encCheck;
+
+}
 
 void setupDistanceSensors() {
   pinMode(sensor_rst1, OUTPUT);

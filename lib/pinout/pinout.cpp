@@ -18,10 +18,10 @@ int led_pin = 13;
 
 
 //Encoders
-int encoderR1 = 2;
-int encoderR2 = 3;
-int encoderL1 = 5;
-int encoderL2 = 4;
+int encoderL1 = 3;
+int encoderL2 = 2;
+int encoderR1 = 4;
+int encoderR2 = 5;
 
 //TOF Sensors
 int sensor_rst1 = 9;

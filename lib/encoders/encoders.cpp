@@ -16,9 +16,9 @@ int encoderL2Pin = encoderL2;
 //7.540960147 encoder ticks/mm
 //double countsPer360 = 2057.196;
 
-double mmPerTick  = 1/(1.85);
-double ticksPerMM = 1.85;
-double countsPer360 = 204;
+double mmPerTick  = 1/(1.163);
+double ticksPerMM = 1.163;
+double countsPer360 = 116.917;
 
 volatile long encoderR = 0;
 volatile long encoderL = 0;
@@ -43,6 +43,9 @@ int sideSensorLeftValue=0;
 
 int distance_mm = 0;
 int distance_deg = 0;
+
+
+
 
 
 
