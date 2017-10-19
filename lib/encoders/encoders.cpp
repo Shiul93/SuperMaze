@@ -18,7 +18,7 @@ int encoderL2Pin = encoderL2;
 
 double mmPerTick  = 1/(1.163);
 double ticksPerMM = 1.163;
-double countsPer360 = 116.917;
+double countsPer360 = 150;
 
 volatile long encoderR = 0;
 volatile long encoderL = 0;

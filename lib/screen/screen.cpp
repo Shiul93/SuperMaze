@@ -70,20 +70,21 @@ void displayENC (int R, int L, int dist, int angle,double RSpeed, double LSpeed)
   char data[6];
 
   char buf[BufSize];
-  printHeader("--------------ENC--------------");
+  printHeader("-------------ENC-------------");
   snprintf (buf, BufSize, "R Count: %d", R);
   oled.drawStr(0,20,buf);
   snprintf (buf, BufSize, "L Count: %d", L);
   oled.drawStr(0,30,buf);
   snprintf (buf, BufSize, "Distance: %d mm", dist);
   oled.drawStr(0,40,buf);
-  //snprintf (buf, BufSize, "Angle: %d", angle);
-  //oled.drawStr(0,50,buf);
-  dtostrf(RSpeed, 4, 2, data);
-  snprintf (buf, BufSize, "R Speed: %s", data);
+  snprintf (buf, BufSize, "Angle: %d", angle);
   oled.drawStr(0,50,buf);
-  dtostrf(LSpeed, 4, 2, data);
-  snprintf (buf, BufSize, "LSpeed: %s", data);
+
+  dtostrf(RSpeed, 4, 2, data);
+  char data2[6];
+
+  dtostrf(LSpeed, 4, 2, data2);
+  snprintf (buf, BufSize, "RS: %s             LS: %s", data, data2  );
   oled.drawStr(0,60,buf);
   oled.nextPage();
 }

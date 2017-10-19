@@ -26,6 +26,8 @@ double g_kp, g_ki, g_kd = 0; //Gyro pid
 double w_kp, w_ki, w_kd = 0; //Wall follow pid
 double d_kp, d_ki, d_kd = 0; //Distance pid
 double s_kp, s_ki, s_kd = 0; //Speed pid
+double r_kp, r_ki, r_kd = 0; //Speed pid
+
 
 
 int almost_checks = 20;
@@ -124,6 +126,12 @@ void setup(){
   s_kp = 50 ;
   s_ki = 0;
   s_kd = 10;
+
+  r_kp = 0.40 ;
+  r_ki = 0.15;
+  r_kd = 0.07;
+
+
   Wire.begin();
   setupScreen();
   //setupPins();
@@ -221,6 +229,10 @@ void loop(){
       if (!completed){
         distanceBehavior(300,readDistance(),d_kp,d_ki,d_kd);
       }
+    }else if (activeBehavior == 'r'){
+      if (!completed){
+        rotateBehavior(360,readAngle(),r_kp,r_ki,r_kd);
+      }
     }else if (activeBehavior == 's'){
       speedBehavior(0.2,s_kp,s_ki,s_kd);
     }else {
@@ -245,6 +257,8 @@ void loop(){
         displayPID(d_kp*errP,d_ki*errI, d_kd*errD, pid_err_print);
       }else if (activeBehavior == 's'){
         displayPID(s_kp*errP,s_ki*errI, s_kd*errD, pid_err_print);
+      }else if (activeBehavior == 'r'){
+        displayPID(r_kp*errP,r_ki*errI, r_kd*errD, pid_err_print);
       }
     }else  if (screenShow =='e'){
       displayENC(encoderR,encoderL,readDistance(), readAngle(), speedR, speedL);
@@ -288,10 +302,14 @@ void loop(){
       }else if (read =='o'){
         activeBehavior = 'o';
 
-      }else if (read = 'd'){
+      }else if (read == 'd'){
         encoderReset();
-        completed = false;
         activeBehavior = 'd';
+        completed = false;
+      }else if (read == 'r'){
+        encoderReset();
+        activeBehavior = 'r';
+        completed = false;
       }
     }
     Serial1.readString(2);
@@ -427,6 +445,45 @@ void distanceBehavior(int mm,int distance, double kp,double ki,double kd){
       almost_count++;
       motorSpeed(RMOTOR, (error>0), abs(newerror));
       motorSpeed(LMOTOR, (error>0), abs(newerror));
+    }
+}
+
+}
+
+void rotateBehavior(int degrees,int angle, double kp,double ki,double kd){
+  completed = false;
+  almost = false;
+
+  int error = degrees-readAngle();
+  errP = error;
+  errI = errI+error;
+  errI = ((error*errI)<0) ? 0 : errI;
+
+  errD = error-lastErr;
+
+
+  lastErr = error;
+  double pidErr = kp*errP + ki*errI + kd*errD;
+  pid_err_print = (abs(pidErr)> 30)? sign(pidErr)*30 : pidErr;
+  int newerror = (abs(pidErr)> 30)? sign(pidErr)*30 : pidErr;
+  newerror = (abs(pidErr)< 17)? sign(pidErr)*17 : pidErr;
+  newerror = (abs(pidErr)>50)? 50 : pidErr;
+
+
+  if (abs(newerror) > 3){
+
+  motorSpeed(RMOTOR, (error>0), abs(newerror));
+  motorSpeed(LMOTOR, (error<0), abs(newerror));
+  }else{
+    if (almost_count > almost_checks){
+      completed = true;
+      almost_count = 0;
+      motorBrake(RLMOTOR);
+
+    }else{
+      almost_count++;
+      motorSpeed(RMOTOR, (error>0), abs(newerror));
+      motorSpeed(LMOTOR, (error<0), abs(newerror));
     }
 }
 }
