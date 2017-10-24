@@ -16,9 +16,9 @@ int encoderL2Pin = encoderL2;
 //7.540960147 encoder ticks/mm
 //double countsPer360 = 2057.196;
 
-double mmPerTick  = 1/(1.163);
-double ticksPerMM = 1.163;
-double countsPer360 = 150;
+double mmPerTick  = 0.085;
+double ticksPerMM = 20;
+double countsPer360 = 1500;
 
 volatile long encoderR = 0;
 volatile long encoderL = 0;
@@ -125,7 +125,7 @@ void setupSensors(){
 }
 
 int readDistance(){
-  return distance_mm;
+  return (int)distance_mm;
 }
 
 int readAngle(){

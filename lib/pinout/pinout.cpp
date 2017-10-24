@@ -3,10 +3,10 @@
 //Motor driver TB6612
 int driver_PWMA = 22;
 int driver_PWMB = 23;
-int driver_AIN1 = 16;
-int driver_AIN2 = 15;
-int driver_BIN1 = 20;
-int driver_BIN2 = 21;
+int driver_AIN1 = 21;
+int driver_AIN2 = 20;
+int driver_BIN1 = 15;
+int driver_BIN2 = 16;
 int driver_STBY = 17;
 
 //Buzzer
@@ -18,10 +18,10 @@ int led_pin = 13;
 
 
 //Encoders
-int encoderL1 = 3;
-int encoderL2 = 2;
-int encoderR1 = 4;
-int encoderR2 = 5;
+int encoderL1 = 2;
+int encoderL2 = 3;
+int encoderR1 = 5;
+int encoderR2 = 4;
 
 //TOF Sensors
 int sensor_rst1 = 9;
