@@ -26,11 +26,13 @@ double g_kp, g_ki, g_kd = 0; //Gyro pid
 double w_kp, w_ki, w_kd = 0; //Wall follow pid
 double d_kp, d_ki, d_kd = 0; //Distance pid
 double s_kp, s_ki, s_kd = 0; //Speed pid
+double sR_kp, sR_ki, sR_kd = 0; //Speed pid
+
 double r_kp, r_ki, r_kd = 0; //Speed pid
 
 
 
-int almost_checks = 20;
+int almost_checks = 5;
 int almost_count = 0;
 bool almost = false;
 
@@ -111,11 +113,11 @@ void sysTick() {
 
 void setup(){
 
-  w_kp = 0.27;
+  w_kp = 0.50;
   w_ki = 0.01;
   w_kd = 0.02;
 
-  g_kp = 0.50 ;
+  g_kp = 1.5 ;
   g_ki = 0.05;
   g_kd = 0.07;
 
@@ -127,9 +129,13 @@ void setup(){
   s_ki = 0;
   s_kd = 10;
 
-  r_kp = 0.40 ;
-  r_ki = 0.15;
-  r_kd = 0.07;
+  sR_kp = 100 ;
+  sR_ki = 10;
+  sR_kd = 10;
+
+  r_kp = 20 ;
+  r_ki = 0;
+  r_kd = 2.5;
 
 
   Wire.begin();
@@ -202,6 +208,15 @@ void setup(){
 
 
 }
+void resetErrors(){
+  errP = 0; 
+  errI = 0;
+  errD = 0;
+  lastErr = 0;
+  lastErrL = 0;
+  lastErrR = 0;
+  
+}
 void encoderFun(){
   updateEncoderData();
   //Serial.printf("Enc L: %i, Enc R: %i, Distance %i, Angle %i \n",encoderL,encoderR,readDistance(),readAngle());
@@ -224,6 +239,7 @@ void loop(){
     if (activeBehavior == 'g'){
       gyroBehavior(g_kp,g_ki,g_kd);
     }else if (activeBehavior == 'w'){
+    
       followBehavior(w_kp,w_ki,w_kd);
     }else if (activeBehavior == 'd'){
       if (!completed){
@@ -231,10 +247,11 @@ void loop(){
       }
     }else if (activeBehavior == 'r'){
       if (!completed){
-        rotateBehavior(360,readAngle(),r_kp,r_ki,r_kd);
+        rotateBehavior(90,readAngle(),r_kp,r_ki,r_kd);
       }
     }else if (activeBehavior == 's'){
-      speedBehavior(0.2,s_kp,s_ki,s_kd);
+      resetErrors();
+      speedBehavior(-0.3,false,s_kp,s_ki,s_kd,sR_kp,sR_ki,sR_kd);
     }else {
       motorCoast(RLMOTOR);
     }
@@ -341,8 +358,8 @@ void followBehavior(double kp,double ki,double kd){
 
   if (abs(newerror) > 5){
 
-  motorSpeed(RMOTOR, (error>0), abs(newerror));
-  motorSpeed(LMOTOR, (error<=0), abs(newerror));
+  motorSpeed(RMOTOR, (error<0), abs(newerror));
+  motorSpeed(LMOTOR, (error>=0), abs(newerror));
   //motorSpeed(RMOTOR, true, newerror);
   //motorSpeed(LMOTOR, true, newerror);
 }else{
@@ -351,7 +368,7 @@ void followBehavior(double kp,double ki,double kd){
 }
 
 void gyroBehavior(double kp,double ki,double kd){
-  int error = -gyroArray[2];
+  int error = gyroArray[2];
   errP = error;
   errI = errI+error;
   errI = ((error*errI)<0) ? 0 : errI;
@@ -375,39 +392,48 @@ void gyroBehavior(double kp,double ki,double kd){
 }
 
 
-void speedBehavior(double speed,double kp,double ki,double kd){
-  double errorL = speed-speedL;
+void speedBehavior(double speed,bool rotate,double kp,double ki,double kd,double kpr,double kir,double kdr){
+  //Error L = objective speed - actual speed
+  double errorL = speed>0 ?speed - speedL : - (abs(speed) - abs(speedL)) ;
   errP = errorL;
   errI = errI+errorL;
   errI = ((errorL*errI)<0) ? 0 : errI;
   errD = errorL-lastErrL;
 
-
+  //Save for integral component
   lastErrL = errorL;
+  //Calculate pid error correction
   double pidErrL = kp*errP + ki*errI + kd*errD;
   pid_err_print = pidErrL;
-  int newerrorL = lastSpeedSetL +  pidErrL;
+  double newerrorL = lastSpeedSetL +  pidErrL;
   lastSpeedSetL = newerrorL;
 
-
-  double errorR = speedL -speedR;
+  //Error R = Actual L speed - Actual R speed /// SPEED CONTROL
+  //double errorR = speedL > 0? speedL - speedR : - (abs(speedL) - abs(speedR)) ;
+  //Error R = L Ticks- R Ticks /// POSITION CONTROL
+  double errorR = encoderL - encoderR ;
+    
+  //errorR = rotate ? -errorR : errorR;
   errP = errorR;
   errI = errI+errorR;
   errI = ((errorR*errI)<0) ? 0 : errI;
   errD = errorR-lastErrR;
 
 
+
   lastErrR = errorR;
-  double pidErrR = kp*errP + ki*errI + kd*errD;
-  pid_err_print = pidErrR;
-  int newerrorR = lastSpeedSetR +  pidErrR;
+  double pidErrR = kpr*errP + kir*errI + kdr*errD;
+  //pid_err_print = pidErrR;
+  double newerrorR = lastSpeedSetR +  pidErrR;
   lastSpeedSetR = newerrorR;
 
 
 
-
-    motorSpeed(RMOTOR, (lastSpeedSetR>0), abs(newerrorR));
-    motorSpeed(LMOTOR, (lastSpeedSetL>0), abs(newerrorL));
+    Serial.print("errorL ");
+    Serial.println(errorL);
+    
+    motorSpeed(RMOTOR, (lastSpeedSetR>=0), abs(newerrorR));
+    motorSpeed(LMOTOR, (newerrorL>=0), abs(newerrorL));
 
 }
 
@@ -428,7 +454,7 @@ void distanceBehavior(int mm,int distance, double kp,double ki,double kd){
   pid_err_print = (abs(pidErr)> 30)? sign(pidErr)*30 : pidErr;
   int newerror = (abs(pidErr)> 30)? sign(pidErr)*30 : pidErr;
   newerror = (abs(pidErr)< 13)? sign(pidErr)*13 : pidErr;
-  newerror = (abs(pidErr)>50)? 50 : pidErr;
+  newerror = (abs(pidErr)>200)? 200 : pidErr;
 
 
   if (abs(newerror) > 3){
@@ -454,7 +480,7 @@ void rotateBehavior(int degrees,int angle, double kp,double ki,double kd){
   completed = false;
   almost = false;
 
-  int error = degrees-readAngle();
+  int error = readAngle()-degrees;
   errP = error;
   errI = errI+error;
   errI = ((error*errI)<0) ? 0 : errI;
@@ -467,15 +493,15 @@ void rotateBehavior(int degrees,int angle, double kp,double ki,double kd){
   pid_err_print = (abs(pidErr)> 30)? sign(pidErr)*30 : pidErr;
   int newerror = (abs(pidErr)> 30)? sign(pidErr)*30 : pidErr;
   newerror = (abs(pidErr)< 17)? sign(pidErr)*17 : pidErr;
-  newerror = (abs(pidErr)>50)? 50 : pidErr;
+  newerror = (abs(pidErr)>100)? 100 : pidErr;
 
 
-  if (abs(newerror) > 3){
+  if (abs(newerror) > 1){
 
   motorSpeed(RMOTOR, (error>0), abs(newerror));
   motorSpeed(LMOTOR, (error<0), abs(newerror));
   }else{
-    if (almost_count > almost_checks){
+    if ((almost_count > almost_checks)||(error==0)){
       completed = true;
       almost_count = 0;
       motorBrake(RLMOTOR);
@@ -504,7 +530,6 @@ void printDistances(){
 
 void checkSpeed(){
 
-  //TODO Comprobar direccion
   long check = millis();
   double time_elapsed = check - lastSpeedCheck;
   lastSpeedCheck = check;
@@ -564,3 +589,6 @@ void setupDistanceSensors() {
   laserCL.setTimeout(500);
   laserCR.setTimeout(500);
   laserFR.setTimeout(500); }
+
+
+  
