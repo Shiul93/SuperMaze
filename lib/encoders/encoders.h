@@ -45,7 +45,15 @@ extern void updateEncoderData();
 extern int readDistance();
 extern int readAngle();
 
+extern void checkSpeed();
 extern void encoderReset();
 extern void checkBattery();
+
+extern long lastTickL;
+extern long lastTickR;
+extern double speedL;
+extern double speedR;
+extern long lastSpeedCheck;
+
 
 #endif

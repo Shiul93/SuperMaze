@@ -44,6 +44,11 @@ int sideSensorLeftValue=0;
 int distance_mm = 0;
 int distance_deg = 0;
 
+long lastTickL = 0;
+long lastTickR = 0;
+double speedL = 0;
+double speedR = 0;
+long lastSpeedCheck = 0;
 
 
 
@@ -138,3 +143,26 @@ void checkBattery(){
 int getAligmentError(){
   return encoderL - encoderR;
 }
+
+/** 
+ * @brief  Updates the speed
+ * @note   
+ * @retval None
+ */
+void checkSpeed(){
+  
+    long check = millis();
+    double time_elapsed = check - lastSpeedCheck;
+    lastSpeedCheck = check;
+  
+    int encCheck = encoderL;
+    int direction = (lastTickL < encCheck) ? 1 : -1;
+    speedL = direction * abs(abs(lastTickL)-abs(encCheck))/(time_elapsed);
+    lastTickL = encCheck;
+  
+    encCheck = encoderR;
+    direction = (lastTickR < encCheck) ? 1 : -1;
+    speedR = direction * abs(abs(lastTickR)-abs(encoderR))/(time_elapsed);
+    lastTickR = encCheck;
+  
+  }
