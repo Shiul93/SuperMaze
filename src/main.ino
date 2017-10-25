@@ -1,3 +1,8 @@
+/** 
+ * @brief  Main file of the supermaze robot
+ * @note   
+ * @retval None
+ */
 #include "arduino.h"
 #include "main.h"
 #include <SPI.h>
@@ -26,7 +31,7 @@ double g_kp, g_ki, g_kd = 0; //Gyro pid
 double w_kp, w_ki, w_kd = 0; //Wall follow pid
 double d_kp, d_ki, d_kd = 0; //Distance pid
 double s_kp, s_ki, s_kd = 0; //Speed pid
-double sR_kp, sR_ki, sR_kd = 0; //Speed pid
+double sr_kp, sr_ki, sr_kd = 0; //Speed pid
 
 double r_kp, r_ki, r_kd = 0; //Speed pid
 
@@ -74,10 +79,21 @@ int hb = 0;
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(2, 8);
 bool activateController = false;
 
-
+/** 
+ * @brief  Returns the sign of a value
+ * @note   
+ * @param  x: the value
+ * @retval 1 if > 0 else -1
+ */
 int sign(int x) {
   return (x > 0) - (x < 0);
 }
+
+/** 
+ * @brief  Updates the distance sensor measures
+ * @note   
+ * @retval None
+ */
 void updateDistances(){//1ms
 
 
@@ -129,9 +145,9 @@ void setup(){
   s_ki = 0;
   s_kd = 10;
 
-  sR_kp = 100 ;
-  sR_ki = 10;
-  sR_kd = 10;
+  sr_kp = 100 ;
+  sr_ki = 10;
+  sr_kd = 10;
 
   r_kp = 20 ;
   r_ki = 0;
@@ -208,6 +224,12 @@ void setup(){
 
 
 }
+
+/** 
+ * @brief  Resets PID error
+ * @note   
+ * @retval None
+ */
 void resetErrors(){
   errP = 0; 
   errI = 0;
@@ -217,6 +239,12 @@ void resetErrors(){
   lastErrR = 0;
   
 }
+
+/** 
+ * @brief  Updates encoder count
+ * @note   
+ * @retval None
+ */
 void encoderFun(){
   updateEncoderData();
   //Serial.printf("Enc L: %i, Enc R: %i, Distance %i, Angle %i \n",encoderL,encoderR,readDistance(),readAngle());
@@ -251,7 +279,7 @@ void loop(){
       }
     }else if (activeBehavior == 's'){
       resetErrors();
-      speedBehavior(-0.3,false,s_kp,s_ki,s_kd,sR_kp,sR_ki,sR_kd);
+      speedBehavior(0.1,false,s_kp,s_ki,s_kd,sr_kp,sr_ki,sr_kd);
     }else {
       motorCoast(RLMOTOR);
     }
@@ -286,61 +314,69 @@ void loop(){
 
   if(longCount>= (1000/3)*sysTickMilisPeriod)//3200ms
   {
-  longCount = 0;
-  if (Serial1.available()){
-    strip.setPixelColor(0, 0, 0, 10);
-    strip.setPixelColor(1, 0, 0, 10);
-    strip.show();
-    delay(100);
-    strip.setPixelColor(0, 0, 0, 0);
-    strip.setPixelColor(1, 0, 0, 0);
-    strip.show();
-    String read = Serial1.readString(1);
-    if (read =='p'){
-      screenShow = 'p';
-    }else if (read =='e'){
-      screenShow = 'e';
-    }else if (read =='a'){
-      screenShow = 'a';
-    }else if (read =='g'){
-      screenShow = 'g';
-    }else if (read =='r'){
-      encoderReset();
-    }
-    else if (read =='b'){
-      read = Serial1.readString(1);
-      if (read =='g'){
-        activeBehavior = 'g';
-      }else if (read =='s'){
-        activeBehavior = 's';
-      }else if (read =='w'){
-        activeBehavior = 'w';
-
-      }else if (read =='o'){
-        activeBehavior = 'o';
-
-      }else if (read == 'd'){
+    longCount = 0;
+    if (Serial1.available()){
+      strip.setPixelColor(0, 0, 0, 10);
+      strip.setPixelColor(1, 0, 0, 10);
+      strip.show();
+      delay(100);
+      strip.setPixelColor(0, 0, 0, 0);
+      strip.setPixelColor(1, 0, 0, 0);
+      strip.show();
+      String read = Serial1.readString(1);
+      if (read =='p'){
+        screenShow = 'p';
+      }else if (read =='e'){
+        screenShow = 'e';
+      }else if (read =='a'){
+        screenShow = 'a';
+      }else if (read =='g'){
+        screenShow = 'g';
+      }else if (read =='r'){
         encoderReset();
-        activeBehavior = 'd';
-        completed = false;
-      }else if (read == 'r'){
-        encoderReset();
-        activeBehavior = 'r';
-        completed = false;
       }
-    }
-    Serial1.readString(2);
-    Serial1.println("ACK");
-    Serial1.println(read);
+      else if (read =='b'){
+        read = Serial1.readString(1);
+        if (read =='g'){
+          activeBehavior = 'g';
+        }else if (read =='s'){
+          activeBehavior = 's';
+        }else if (read =='w'){
+          activeBehavior = 'w';
 
-  }
-  //printDistances();
+        }else if (read =='o'){
+          activeBehavior = 'o';
+
+        }else if (read == 'd'){
+          encoderReset();
+          activeBehavior = 'd';
+          completed = false;
+        }else if (read == 'r'){
+          encoderReset();
+          resetErrors();
+          activeBehavior = 'r';
+          completed = false;
+        }
+      }
+      Serial1.readString(2);
+      Serial1.println("ACK");
+      Serial1.println(read);
+
+    }
+    //printDistances();
   }
 
 
 
 }
-
+/** 
+ * @brief  Wall follower behavior
+ * @note   
+ * @param  kp: P Constant
+ * @param  ki: I Constant
+ * @param  kd: D Constant
+ * @retval None
+ */
 void followBehavior(double kp,double ki,double kd){
   int error = distCL-distCR;
   errP = error;
@@ -358,13 +394,13 @@ void followBehavior(double kp,double ki,double kd){
 
   if (abs(newerror) > 5){
 
-  motorSpeed(RMOTOR, (error<0), abs(newerror));
-  motorSpeed(LMOTOR, (error>=0), abs(newerror));
-  //motorSpeed(RMOTOR, true, newerror);
-  //motorSpeed(LMOTOR, true, newerror);
-}else{
-  motorBrake(RLMOTOR);
-}
+    motorSpeed(RMOTOR, (error<0), abs(newerror));
+    motorSpeed(LMOTOR, (error>=0), abs(newerror));
+    //motorSpeed(RMOTOR, true, newerror);
+    //motorSpeed(LMOTOR, true, newerror);
+  }else{
+    motorBrake(RLMOTOR);
+  }
 }
 
 void gyroBehavior(double kp,double ki,double kd){
@@ -391,7 +427,19 @@ void gyroBehavior(double kp,double ki,double kd){
 
 }
 
-
+/** 
+ * @brief  Speed set controller
+ * @note   
+ * @param  speed: Objective speed
+ * @param  rotate: if true, right wheel will be reversed
+ * @param  kp: P Constant (Left wheel)
+ * @param  ki: I Constant (Left wheel)
+ * @param  kd: D Constant (Left wheel)
+ * @param  kpr: P Constant (Right wheel)
+ * @param  kir: I Constant (Right wheel)
+ * @param  kdr: D Constant (Right wheel)
+ * @retval None
+ */
 void speedBehavior(double speed,bool rotate,double kp,double ki,double kd,double kpr,double kir,double kdr){
   //Error L = objective speed - actual speed
   double errorL = speed>0 ?speed - speedL : - (abs(speed) - abs(speedL)) ;
@@ -409,11 +457,11 @@ void speedBehavior(double speed,bool rotate,double kp,double ki,double kd,double
   lastSpeedSetL = newerrorL;
 
   //Error R = Actual L speed - Actual R speed /// SPEED CONTROL
-  //double errorR = speedL > 0? speedL - speedR : - (abs(speedL) - abs(speedR)) ;
+  double errorR = speedL > 0 ? speedL - speedR : - (abs(speedL) - abs(speedR)) ;
   //Error R = L Ticks- R Ticks /// POSITION CONTROL
-  double errorR = encoderL - encoderR ;
+  //double errorR = encoderL - encoderR ;
     
-  //errorR = rotate ? -errorR : errorR;
+  errorR = rotate ? -errorR : errorR;
   errP = errorR;
   errI = errI+errorR;
   errI = ((errorR*errI)<0) ? 0 : errI;
@@ -429,14 +477,24 @@ void speedBehavior(double speed,bool rotate,double kp,double ki,double kd,double
 
 
 
-    Serial.print("errorL ");
-    Serial.println(errorL);
+    Serial.print("errorR ");
+    Serial.println(errorR);
     
     motorSpeed(RMOTOR, (lastSpeedSetR>=0), abs(newerrorR));
     motorSpeed(LMOTOR, (newerrorL>=0), abs(newerrorL));
 
 }
 
+/** 
+ * @brief  Distance set controller
+ * @note   
+ * @param  mm: Objective
+ * @param  distance: Actual distance
+ * @param  kp: P Constant
+ * @param  ki: I Constant
+ * @param  kd: D Constant
+ * @retval None
+ */
 void distanceBehavior(int mm,int distance, double kp,double ki,double kd){
   completed = false;
   almost = false;
@@ -459,22 +517,33 @@ void distanceBehavior(int mm,int distance, double kp,double ki,double kd){
 
   if (abs(newerror) > 3){
 
-  motorSpeed(RMOTOR, (error>0), abs(newerror));
-  motorSpeed(LMOTOR, (error>0), abs(newerror));
-  }else{
-    if (almost_count > almost_checks){
-      completed = true;
-      almost_count = 0;
-      motorBrake(RLMOTOR);
-
+    motorSpeed(RMOTOR, (error>0), abs(newerror));
+    motorSpeed(LMOTOR, (error>0), abs(newerror));
     }else{
-      almost_count++;
-      motorSpeed(RMOTOR, (error>0), abs(newerror));
-      motorSpeed(LMOTOR, (error>0), abs(newerror));
-    }
-}
+      if (almost_count > almost_checks){
+        completed = true;
+        almost_count = 0;
+        motorBrake(RLMOTOR);
+
+      }else{
+        almost_count++;
+        motorSpeed(RMOTOR, (error>0), abs(newerror));
+        motorSpeed(LMOTOR, (error>0), abs(newerror));
+      }
+  }
 
 }
+
+/** 
+ * @brief  Rotation controller
+ * @note   
+ * @param  degrees: Objective position 
+ * @param  angle: Actual position
+ * @param  kp: P Constant
+ * @param  ki: I Constant
+ * @param  kd: D Constant
+ * @retval None
+ */
 
 void rotateBehavior(int degrees,int angle, double kp,double ki,double kd){
   completed = false;
@@ -498,23 +567,27 @@ void rotateBehavior(int degrees,int angle, double kp,double ki,double kd){
 
   if (abs(newerror) > 1){
 
-  motorSpeed(RMOTOR, (error>0), abs(newerror));
-  motorSpeed(LMOTOR, (error<0), abs(newerror));
-  }else{
-    if ((almost_count > almost_checks)||(error==0)){
-      completed = true;
-      almost_count = 0;
-      motorBrake(RLMOTOR);
-
+    motorSpeed(RMOTOR, (error>0), abs(newerror));
+    motorSpeed(LMOTOR, (error<0), abs(newerror));
     }else{
-      almost_count++;
-      motorSpeed(RMOTOR, (error>0), abs(newerror));
-      motorSpeed(LMOTOR, (error<0), abs(newerror));
-    }
-}
+      if ((almost_count > almost_checks)||(error==0)){
+        completed = true;
+        almost_count = 0;
+        motorBrake(RLMOTOR);
+
+      }else{
+        almost_count++;
+        motorSpeed(RMOTOR, (error>0), abs(newerror));
+        motorSpeed(LMOTOR, (error<0), abs(newerror));
+      }
+  }
 }
 
-
+/** 
+ * @brief  Prints on the serial port the distance sensor reading
+ * @note   
+ * @retval None
+ */
 void printDistances(){
   Serial.print("FL: ");
   Serial.print(distFL);
@@ -528,6 +601,11 @@ void printDistances(){
   Serial.println();
 }
 
+/** 
+ * @brief  Updates the speed
+ * @note   
+ * @retval None
+ */
 void checkSpeed(){
 
   long check = millis();
@@ -546,6 +624,11 @@ void checkSpeed(){
 
 }
 
+/** 
+ * @brief  Sets up the distance sensors
+ * @note   
+ * @retval None
+ */
 void setupDistanceSensors() {
   pinMode(sensor_rst1, OUTPUT);
   pinMode(sensor_rst2, OUTPUT);
@@ -588,7 +671,8 @@ void setupDistanceSensors() {
   laserFL.setTimeout(500);
   laserCL.setTimeout(500);
   laserCR.setTimeout(500);
-  laserFR.setTimeout(500); }
+  laserFR.setTimeout(500); 
+}
 
 
   
