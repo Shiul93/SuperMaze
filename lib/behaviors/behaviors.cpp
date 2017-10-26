@@ -13,6 +13,11 @@ double  sr_errP, sr_errI, sr_errD, sr_lastErr = 0;
 
 double  wf_errP, wf_errI, wf_errD, wf_lastErr = 0;
 
+double  rot_errP, rot_errI, rot_errD, rot_lastErr = 0;
+int rot_almost_count = 0;
+bool rot_almost, rot_completed = false;
+
+
 /** 
  * @brief  Gyroscope control behavior
  * @note   Oposes to rotation
@@ -122,5 +127,53 @@ void wallFollowBehavior(){
     //motorSpeed(LMOTOR, true, newerror);
   }else{
     motorBrake(RLMOTOR);
+  }
+}
+
+/** 
+ * @brief  Rotation controller
+ * @note   
+ * @param  degrees: Objective position 
+ * @param  angle: Actual position
+ * @param  kp: P Constant
+ * @param  ki: I Constant
+ * @param  kd: D Constant
+ * @retval None
+ */
+
+void rotateBehavior(int degrees){
+  rot_completed = false;
+  rot_almost = false;
+
+  int error = readAngle()-degrees;
+  rot_errP = error;
+  rot_errI = rot_errI+error;
+  rot_errI = ((error*rot_errI)<0) ? 0 : rot_errI;
+
+  rot_errD = error-rot_lastErr;
+
+
+  rot_lastErr = error;
+  double pidErr = ROT_KP*rot_errP + ROT_KI*rot_errI + ROT_KD*rot_errD;
+  int newerror = (abs(pidErr)> 30)? sign(pidErr)*30 : pidErr;
+  newerror = (abs(pidErr)< 17)? sign(pidErr)*17 : pidErr;
+  newerror = (abs(pidErr)>100)? 100 : pidErr;
+
+
+  if (abs(newerror) > 1){
+
+    motorSpeed(RMOTOR, (error>0), abs(newerror));
+    motorSpeed(LMOTOR, (error<0), abs(newerror));
+    }else{
+      if ((rot_almost_count > ROT_ALMOST)||(error==0)){
+        rot_completed = true;
+        rot_almost_count = 0;
+        motorBrake(RLMOTOR);
+
+      }else{
+        rot_almost_count++;
+        motorSpeed(RMOTOR, (error>0), abs(newerror));
+        motorSpeed(LMOTOR, (error<0), abs(newerror));
+      }
   }
 }

@@ -30,7 +30,6 @@ bool completed = true;
 double pid_err_print;
 double d_kp, d_ki, d_kd = 0; //Distance pid
 
-double r_kp, r_ki, r_kd = 0; //Speed pid
 
 
 
@@ -84,11 +83,6 @@ void setup(){
   d_kp = 0.3 ;
   d_ki = 0.05;
   d_kd = 0.15;
-
-
-  r_kp = 20 ;
-  r_ki = 0;
-  r_kd = 2.5;
 
 
   Wire.begin();
@@ -209,7 +203,7 @@ void loop(){
       }
     }else if (activeBehavior == 'r'){
       if (!completed){
-        rotateBehavior(90,readAngle(),r_kp,r_ki,r_kd);
+        rotateBehavior(90);
       }
     }else if (activeBehavior == 's'){
       resetErrors();
@@ -348,54 +342,6 @@ void distanceBehavior(int mm,int distance, double kp,double ki,double kd){
 
 }
 
-/** 
- * @brief  Rotation controller
- * @note   
- * @param  degrees: Objective position 
- * @param  angle: Actual position
- * @param  kp: P Constant
- * @param  ki: I Constant
- * @param  kd: D Constant
- * @retval None
- */
-
-void rotateBehavior(int degrees,int angle, double kp,double ki,double kd){
-  completed = false;
-  almost = false;
-
-  int error = readAngle()-degrees;
-  errP = error;
-  errI = errI+error;
-  errI = ((error*errI)<0) ? 0 : errI;
-
-  errD = error-lastErr;
-
-
-  lastErr = error;
-  double pidErr = kp*errP + ki*errI + kd*errD;
-  pid_err_print = (abs(pidErr)> 30)? sign(pidErr)*30 : pidErr;
-  int newerror = (abs(pidErr)> 30)? sign(pidErr)*30 : pidErr;
-  newerror = (abs(pidErr)< 17)? sign(pidErr)*17 : pidErr;
-  newerror = (abs(pidErr)>100)? 100 : pidErr;
-
-
-  if (abs(newerror) > 1){
-
-    motorSpeed(RMOTOR, (error>0), abs(newerror));
-    motorSpeed(LMOTOR, (error<0), abs(newerror));
-    }else{
-      if ((almost_count > almost_checks)||(error==0)){
-        completed = true;
-        almost_count = 0;
-        motorBrake(RLMOTOR);
-
-      }else{
-        almost_count++;
-        motorSpeed(RMOTOR, (error>0), abs(newerror));
-        motorSpeed(LMOTOR, (error<0), abs(newerror));
-      }
-  }
-}
 
 /** 
  * @brief  Prints on the serial port the distance sensor reading
