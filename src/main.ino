@@ -22,30 +22,6 @@
 
 
 
-
-double  errP, errI, errD, lastErr, lastErrL, lastErrR = 0;
-
-bool completed = true;
-
-double pid_err_print;
-double d_kp, d_ki, d_kd = 0; //Distance pid
-
-
-
-
-int almost_checks = 5;
-int almost_count = 0;
-bool almost = false;
-
-
-
-
-
-
-
-
-
-
 IntervalTimer sysTimer;
 unsigned long sysTickCounts = 0;
 elapsedMicros systickMicros;
@@ -77,14 +53,6 @@ void sysTick() {
 }
 
 void setup(){
-
-
-
-  d_kp = 0.3 ;
-  d_ki = 0.05;
-  d_kd = 0.15;
-
-
   Wire.begin();
   setupScreen();
   //setupPins();
@@ -153,20 +121,7 @@ void setup(){
 
 }
 
-/** 
- * @brief  Resets PID error
- * @note   
- * @retval None
- */
-void resetErrors(){
-  errP = 0; 
-  errI = 0;
-  errD = 0;
-  lastErr = 0;
-  lastErrL = 0;
-  lastErrR = 0;
-  
-}
+
 
 /** 
  * @brief  Updates encoder count
@@ -198,11 +153,11 @@ void loop(){
     
       wallFollowBehavior();
     }else if (activeBehavior == 'd'){
-      if (!completed){
-        distanceBehavior(300,readDistance(),d_kp,d_ki,d_kd);
+      if (!d_completed){
+        distanceBehavior(300);
       }
     }else if (activeBehavior == 'r'){
-      if (!completed){
+      if (!rot_completed){
         rotateBehavior(90);
       }
     }else if (activeBehavior == 's'){
@@ -268,12 +223,12 @@ void loop(){
         }else if (read == 'd'){
           encoderReset();
           activeBehavior = 'd';
-          completed = false;
+          d_completed = false;
         }else if (read == 'r'){
           encoderReset();
           resetErrors();
           activeBehavior = 'r';
-          completed = false;
+          rot_completed = false;
         }
       }
       Serial1.readString(2);
@@ -293,54 +248,7 @@ void loop(){
 
 
 
-/** 
- * @brief  Distance set controller
- * @note   
- * @param  mm: Objective
- * @param  distance: Actual distance
- * @param  kp: P Constant
- * @param  ki: I Constant
- * @param  kd: D Constant
- * @retval None
- */
-void distanceBehavior(int mm,int distance, double kp,double ki,double kd){
-  completed = false;
-  almost = false;
 
-  int error = mm - distance;
-  errP = error;
-  errI = errI+error;
-  errI = ((error*errI)<0) ? 0 : errI;
-
-  errD = error-lastErr;
-
-
-  lastErr = error;
-  double pidErr = kp*errP + ki*errI + kd*errD;
-  pid_err_print = (abs(pidErr)> 30)? sign(pidErr)*30 : pidErr;
-  int newerror = (abs(pidErr)> 30)? sign(pidErr)*30 : pidErr;
-  newerror = (abs(pidErr)< 13)? sign(pidErr)*13 : pidErr;
-  newerror = (abs(pidErr)>200)? 200 : pidErr;
-
-
-  if (abs(newerror) > 3){
-
-    motorSpeed(RMOTOR, (error>0), abs(newerror));
-    motorSpeed(LMOTOR, (error>0), abs(newerror));
-    }else{
-      if (almost_count > almost_checks){
-        completed = true;
-        almost_count = 0;
-        motorBrake(RLMOTOR);
-
-      }else{
-        almost_count++;
-        motorSpeed(RMOTOR, (error>0), abs(newerror));
-        motorSpeed(LMOTOR, (error>0), abs(newerror));
-      }
-  }
-
-}
 
 
 /** 

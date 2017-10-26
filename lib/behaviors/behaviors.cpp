@@ -18,6 +18,11 @@ int rot_almost_count = 0;
 bool rot_almost, rot_completed = false;
 
 
+double  d_errP, d_errI, d_errD, d_lastErr = 0;
+int d_almost_count = 0;
+bool d_almost, d_completed = false;
+
+
 /** 
  * @brief  Gyroscope control behavior
  * @note   Oposes to rotation
@@ -155,9 +160,8 @@ void rotateBehavior(int degrees){
 
   rot_lastErr = error;
   double pidErr = ROT_KP*rot_errP + ROT_KI*rot_errI + ROT_KD*rot_errD;
-  int newerror = (abs(pidErr)> 30)? sign(pidErr)*30 : pidErr;
-  newerror = (abs(pidErr)< 17)? sign(pidErr)*17 : pidErr;
-  newerror = (abs(pidErr)>100)? 100 : pidErr;
+  int newerror = (abs(pidErr)> ROT_SPEED_LIMIT_LOW)? sign(pidErr)*ROT_SPEED_LIMIT_LOW : pidErr;
+  newerror = (abs(pidErr)>ROT_SPEED_LIMIT_HIGH)? ROT_SPEED_LIMIT_HIGH : pidErr;
 
 
   if (abs(newerror) > 1){
@@ -176,4 +180,83 @@ void rotateBehavior(int degrees){
         motorSpeed(LMOTOR, (error<0), abs(newerror));
       }
   }
+}
+
+/** 
+ * @brief  Distance set controller
+ * @note   
+ * @param  mm: Objective
+ * @param  distance: Actual distance
+ * @param  kp: P Constant
+ * @param  ki: I Constant
+ * @param  kd: D Constant
+ * @retval None
+ */
+void distanceBehavior(int mm){
+  d_completed = false;
+  d_almost = false;
+
+  int error = mm - readDistance();
+  d_errP = error;
+  d_errI = d_errI+error;
+  d_errI = ((error*d_errI)<0) ? 0 : d_errI;
+
+  d_errD = error-d_lastErr;
+
+
+  d_lastErr = error;
+  double pidErr = DIST_KP*d_errP + DIST_KI*d_errI + DIST_KD*d_errD;
+  int newerror = (abs(pidErr)< DIST_SPEED_LIMIT_LOW)? sign(pidErr)*DIST_SPEED_LIMIT_LOW : pidErr;
+  newerror = (abs(pidErr)>DIST_SPEED_LIMIT_HIGH)? DIST_SPEED_LIMIT_HIGH : pidErr;
+
+
+  if (abs(newerror) > 3){
+
+    motorSpeed(RMOTOR, (error>0), abs(newerror));
+    motorSpeed(LMOTOR, (error>0), abs(newerror));
+    }else{
+      if (d_almost_count > DIST_ALMOST){
+        d_completed = true;
+        d_almost_count = 0;
+        motorBrake(RLMOTOR);
+
+      }else{
+        d_almost_count++;
+        motorSpeed(RMOTOR, (error>0), abs(newerror));
+        motorSpeed(LMOTOR, (error>0), abs(newerror));
+      }
+  }
+
+}
+
+/** 
+ * @brief  Resets PID error
+ * @note   
+ * @retval None
+ */
+void resetErrors(){
+  g_errP = 0; 
+  g_errI = 0;
+  g_errD = 0;
+
+  sl_errP = 0; 
+  sl_errI = 0;
+  sl_errD = 0;
+  sr_errP = 0; 
+  sr_errI = 0;
+  sr_errD = 0;
+
+  wf_errP = 0; 
+  wf_errI = 0;
+  wf_errD = 0;
+
+  d_errP = 0; 
+  d_errI = 0;
+  d_errD = 0;
+
+  rot_errP = 0; 
+  rot_errI = 0;
+  rot_errD = 0;
+
+  
 }
