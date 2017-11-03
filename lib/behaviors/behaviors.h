@@ -1,5 +1,7 @@
 #ifndef BEHAVIORS_H
 #define BEHAVIORS_H
+
+#include "Arduino.h"
  
 #define GYRO_KP 1.5
 #define GYRO_KI 0.05
@@ -18,17 +20,30 @@
 
 #define ROT_KP 20
 #define ROT_KI 0 
-#define ROT_KD 2.5
+#define ROT_KD 3
 #define ROT_ALMOST 5
 #define ROT_SPEED_LIMIT_LOW 30
-#define ROT_SPEED_LIMIT_HIGH 100
+#define ROT_SPEED_LIMIT_HIGH 75
 
 #define DIST_KP 0.3
 #define DIST_KI 0.05 
 #define DIST_KD 0.15
 #define DIST_ALMOST 5
 #define DIST_SPEED_LIMIT_LOW 30
-#define DIST_SPEED_LIMIT_HIGH 100
+#define DIST_SPEED_LIMIT_HIGH 150
+
+#define MAPSIZEX 16
+#define MAPSIZEY 16
+
+#define NORTH   0b00000001
+#define SOUTH   0b00000010
+#define EAST    0b00000100
+#define WEST    0b00001000
+
+#define VISITED 0b00010000
+
+
+
 
 extern double  g_errP, g_errI, g_errD, g_lastErr;
 
@@ -45,6 +60,7 @@ extern double d_errP, d_errI, d_errD, d_lastErr;
 extern int d_almost_count;
 extern bool d_almost, d_completed;
 
+extern bool working,finishBehavior;
 
 void wallFollowBehavior();
 void gyroBehavior();
@@ -52,5 +68,15 @@ void speedBehavior(double speed,bool rotate);
 void rotateBehavior(int degrees);
 void distanceBehavior(int mm);
 void resetErrors();
+void labBehavior();
+void mazeBehavior();
+void setupMap();
+
+
+extern int nextLabState;
+extern int posX;
+extern int posY;
+extern byte absoluteOrientation;
+
     
 #endif

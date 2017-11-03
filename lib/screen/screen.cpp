@@ -65,6 +65,30 @@ void displayPID(double ep, double ei, double ed, double error){
   oled.nextPage();
 }
 
+void displayDistances(double FL, double FR, double CL, double CR){
+  enum {BufSize=32}; // If a is short use a smaller number, eg 5 or 6
+  char data[6];
+  char buf[BufSize];
+  printHeader("-------------DIST-------------");
+  dtostrf(FL, 4, 2, data);
+
+  snprintf (buf, BufSize, "FL: %s mm", data);
+  oled.drawStr(0,20,buf);
+  dtostrf(FR, 4, 2, data);
+
+  snprintf (buf, BufSize, "FR: %smm", data);
+  oled.drawStr(0,30,buf);
+  dtostrf(CL, 4, 2, data);
+
+  snprintf (buf, BufSize, "CL: %s", data);
+  oled.drawStr(0,40,buf);
+  dtostrf(CR, 4, 2, data);
+
+  snprintf (buf, BufSize, "CR: %s", data);
+  oled.drawStr(0,50,buf);
+  oled.nextPage();
+}
+
 void displayENC (int R, int L, int dist, int angle,double RSpeed, double LSpeed){
   enum {BufSize=32}; // If a is short use a smaller number, eg 5 or 6
   char data[6];

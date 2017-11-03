@@ -22,6 +22,39 @@ double  d_errP, d_errI, d_errD, d_lastErr = 0;
 int d_almost_count = 0;
 bool d_almost, d_completed = false;
 
+bool finishBehavior = true; 
+bool working = false;
+
+int labState = 0;
+int nextLabState = 0;
+
+//Absolute orientation on the map
+byte absoluteOrientation = NORTH;
+
+int posX = 0;
+int posY = 0;
+
+bool rotation = false;
+int rotDir = 0;
+
+
+byte mazemap[16][16] = {
+  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 
 /** 
  * @brief  Gyroscope control behavior
@@ -29,6 +62,7 @@ bool d_almost, d_completed = false;
  * @retval None
  */
 void gyroBehavior(){
+  
     int error = gyroArray[2];
     g_errP = error;
     g_errI = g_errI+error;
@@ -47,6 +81,7 @@ void gyroBehavior(){
       motorSpeed(LMOTOR, (error<=0), abs(newerror));
     }else{
       motorBrake(RLMOTOR);
+      finishBehavior = true;
     }
   
   }
@@ -149,6 +184,7 @@ void wallFollowBehavior(){
 void rotateBehavior(int degrees){
   rot_completed = false;
   rot_almost = false;
+  working = true;
 
   int error = readAngle()-degrees;
   rot_errP = error;
@@ -173,6 +209,10 @@ void rotateBehavior(int degrees){
         rot_completed = true;
         rot_almost_count = 0;
         motorBrake(RLMOTOR);
+        finishBehavior = true;
+        working = false;
+        
+        
 
       }else{
         rot_almost_count++;
@@ -195,6 +235,8 @@ void rotateBehavior(int degrees){
 void distanceBehavior(int mm){
   d_completed = false;
   d_almost = false;
+  working = true;
+  
 
   int error = mm - readDistance();
   d_errP = error;
@@ -219,6 +261,9 @@ void distanceBehavior(int mm){
         d_completed = true;
         d_almost_count = 0;
         motorBrake(RLMOTOR);
+        working = false;
+        finishBehavior = true;
+        
 
       }else{
         d_almost_count++;
@@ -260,3 +305,348 @@ void resetErrors(){
 
   
 }
+
+void labBehavior(){
+  
+  int multiplier = 1;
+  
+
+  if (finishBehavior){
+    Serial1.println("FINISH BEHAVIOR");
+    encoderReset();
+    resetErrors();    
+    finishBehavior = false;
+    
+    labState = nextLabState;
+    if (distCR>200){
+      nextLabState = 1;
+    }else if (distCL>200){
+      nextLabState = 2;
+    }else{
+      multiplier = (distFL/180);
+      nextLabState = 0;
+    }
+    if ( distFL < 100){
+      labState = 1;
+    }
+    
+  }else{
+      switch(labState){
+        Serial1.println("State");
+        case 0:
+          distanceBehavior(180);
+          break;
+        case 1:
+          rotateBehavior(90);
+          break;
+        case 2:
+          rotateBehavior(-90);
+          break;
+        case 3:
+          rotateBehavior(180);
+          break;
+        /*case 3:
+          distanceBehavior(180*multiplier);
+          break;*/
+        
+        
+        default:
+          finishBehavior = false;
+          labState = 0;
+        break;
+      }
+    
+      
+  }
+}
+
+
+void updateWalls(){
+  //mazemap[posX][posY]=  mazemap[posX][posY]|VISITED;  
+  int frontDist = (distFL>0)&(distFR>0)? (distFL+distFR)/2 : 0;
+  int frontCas = frontDist / 180;
+
+  //Serial1.println(frontCas);
+  switch (absoluteOrientation){
+    case NORTH:
+      mazemap[posX][posY+frontCas] =frontDist > 0? mazemap[posX][posY+frontCas]|NORTH : mazemap[posX][posY+frontCas];
+      mazemap[posX][posY+frontCas+1] =frontDist > 0? mazemap[posX][posY+frontCas+1]|NORTH : mazemap[posX][posY+frontCas+1];
+      
+      if (distCL < 200){
+        mazemap[posX][posY+1] = mazemap[posX][posY+1]|WEST;
+      }
+      if (distCR < 200){
+        mazemap[posX][posY+1] = mazemap[posX][posY+1]|EAST; 
+      }
+    break;
+    case SOUTH:
+      mazemap[posX][posY-frontCas] = frontDist > 0?mazemap[posX][posY-frontCas]|SOUTH : mazemap[posX][posY-frontCas];
+      mazemap[posX][posY-frontCas-1] = frontDist > 0?mazemap[posX][posY-frontCas-1]|SOUTH : mazemap[posX][posY-frontCas-1];
+      
+      if (distCL < 200){
+        mazemap[posX][posY-1] = mazemap[posX][posY-1]|EAST;
+      }
+      if (distCR < 200){
+        mazemap[posX][posY-1] = mazemap[posX][posY-1]|WEST; 
+      }
+    break;
+    case EAST:
+      mazemap[posX+frontCas][posY] =frontDist > 0? mazemap[posX+frontCas][posY]|EAST : mazemap[posX+frontCas][posY];
+      mazemap[posX+frontCas+1][posY] =frontDist > 0? mazemap[posX+frontCas+1][posY]|EAST : mazemap[posX+frontCas+1][posY];
+      
+      if (distCL < 200){
+        mazemap[posX+1][posY] = mazemap[posX+1][posY]|NORTH;
+      }
+      if (distCR < 200){
+        mazemap[posX+1][posY] = mazemap[posX+1][posY]|SOUTH; 
+      }
+    break;
+    case WEST:
+      mazemap[posX-frontCas][posY] = frontDist > 0?mazemap[posX-frontCas][posY]|WEST : mazemap[posX-frontCas][posY];
+      mazemap[posX-frontCas-1][posY] = frontDist > 0?mazemap[posX-frontCas-1][posY]|WEST : mazemap[posX-frontCas-1][posY];
+      
+      if (distCL < 200){
+        mazemap[posX-1][posY] = mazemap[posX-1][posY]|SOUTH;
+      }
+      if (distCR < 200){
+        mazemap[posX-1][posY] = mazemap[posX-1][posY]|NORTH; 
+      }    
+    break;
+  }
+}
+
+
+boolean checkFront(){
+  return ((mazemap[posX][posY]&absoluteOrientation)==absoluteOrientation);
+}
+
+boolean checkRight(){
+ switch (absoluteOrientation){
+   case NORTH:
+     if((mazemap[posX][posY]&EAST)==EAST){
+       return true;
+     }
+   break;
+   case SOUTH:
+     if((mazemap[posX][posY]&WEST)==WEST){
+       return true;
+     }      
+   break;
+   case EAST:
+     if((mazemap[posX][posY]&SOUTH)==SOUTH){
+       return true;
+     }      
+   break;
+   case WEST:
+     if((mazemap[posX][posY]&NORTH)==NORTH){
+       return true;
+     }          
+   break;
+ }
+ return false;
+}
+
+boolean checkLeft(){
+ switch (absoluteOrientation){
+   case NORTH:
+     if((mazemap[posX][posY]&WEST)==WEST){
+       return true;
+     }
+   break;
+   case SOUTH:
+     if((mazemap[posX][posY]&EAST)==EAST){
+       return true;
+     }      
+   break;
+   case EAST:
+     if((mazemap[posX][posY]&NORTH)==NORTH){
+       return true;
+     }      
+   break;
+   case WEST:
+     if((mazemap[posX][posY]&SOUTH)==SOUTH){
+       return true;
+     }          
+   break;
+ }
+ return false;
+}
+
+void updatePos(){
+  switch (absoluteOrientation){
+    case NORTH:
+      posY=posY+1;
+    break;
+    case SOUTH:
+      posY=posY-1;    
+    break;
+    case EAST:
+      posX=posX+1;     
+    break;
+    case WEST:
+      posX=posX-1;          
+    break;
+  }
+}
+void updateOrientation(int rot){
+  switch (absoluteOrientation){
+    case NORTH:
+        if (rot == 180){
+          absoluteOrientation = SOUTH;
+      }else if (rot == 90){
+          absoluteOrientation = WEST;
+      }else if (rot == -90) {
+          absoluteOrientation = EAST;
+      }
+      break;
+    case SOUTH:
+      if (rot == 180){
+        absoluteOrientation = NORTH;
+      }else if (rot == 90){
+        absoluteOrientation = EAST;
+      }else if (rot == -90) {
+        absoluteOrientation = WEST;
+      }    
+      break;
+    case EAST:
+      if (rot == 180){
+        absoluteOrientation = WEST;        
+      }else if (rot == 90){
+        absoluteOrientation = NORTH;
+      }else if (rot == -90) {
+        absoluteOrientation = SOUTH;       
+      }    
+      break;
+    case WEST:
+      if (rot == 180){
+        absoluteOrientation = EAST;        
+      }else if (rot == 90){
+        absoluteOrientation = SOUTH;
+      }else if (rot == -90) {
+        absoluteOrientation = NORTH;        
+      }    
+      break;
+  }
+}
+
+int decideMovement(){
+  if (rotation){
+    rotation = false;
+    updatePos();    
+    return 0;
+  }
+  if (!checkRight()){
+    rotation = true;
+    rotDir = 2;
+    updateOrientation(-90);
+    return rotDir;
+  }
+  if (checkFront()&&!checkLeft()){
+    rotation = true;
+    rotDir = 1;
+    updateOrientation(90);
+    return rotDir;
+  }
+  if((checkLeft())&&(checkFront())&&(checkRight())){
+    rotation = true;
+    rotDir =3;
+    updateOrientation(180);    
+    return rotDir;
+  }
+  
+
+  updatePos();
+  return 0;
+
+
+}
+
+void printOrientation(){
+  Serial1.print("Position = ( ");
+  Serial1.print(posX);
+  Serial1.print(", ");
+  Serial1.print(posY);
+  Serial1.print(") Facing: ");
+  switch (absoluteOrientation){
+    case NORTH:
+      Serial1.println("NORTH");
+      break;
+    case SOUTH:
+      Serial1.println("SOUTH");
+    
+      break;
+    case EAST:
+    Serial1.println("EAST");
+    
+      break;
+    case WEST:
+    Serial1.println("WEST");
+    
+      break;
+  }
+  Serial1.print("CASBYTE: ");
+  Serial1.println(mazemap[posX][posY]);
+
+}
+
+void mazeBehavior(){
+  
+  int multiplier = 1;
+  
+
+  if (finishBehavior){
+    //Serial1.println("FINISH BEHAVIOR");
+    encoderReset();
+    resetErrors();    
+    finishBehavior = false;
+    printOrientation();
+    updateWalls();
+    labState = decideMovement();
+    Serial1.print("Movement: ");
+    Serial1.println(labState);
+    
+    
+    
+    
+    
+    
+    
+    
+  }else{
+      switch(labState){
+        Serial1.println("State");
+        case 0:
+          distanceBehavior(180);
+          break;
+        case 1:
+          rotation = true;
+          rotateBehavior(90);
+          break;
+        case 2:
+          rotation = true;
+          rotateBehavior(-90);
+          break;
+        case 3:
+          rotation = true;        
+          rotateBehavior(180);
+          break;
+        /*case 3:
+          distanceBehavior(180*multiplier);
+          break;*/
+        
+        
+        default:
+          finishBehavior = false;
+          labState = 0;
+          break;
+        
+      }
+    
+      
+  }
+}
+
+void setupMap(){
+  mazemap[0][0] = SOUTH | EAST | WEST;
+}
+

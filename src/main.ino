@@ -21,6 +21,7 @@
 #include "utils.h"
 
 
+#define CAS 180
 
 IntervalTimer sysTimer;
 unsigned long sysTickCounts = 0;
@@ -38,6 +39,7 @@ int hb = 0;
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(2, 8);
 bool activateController = false;
 
+int state = 1;
 
 
 
@@ -55,6 +57,7 @@ void sysTick() {
 void setup(){
   Wire.begin();
   setupScreen();
+  setupMap();
   //setupPins();
 
 
@@ -154,15 +157,17 @@ void loop(){
       wallFollowBehavior();
     }else if (activeBehavior == 'd'){
       if (!d_completed){
-        distanceBehavior(300);
+        distanceBehavior(180);
       }
     }else if (activeBehavior == 'r'){
       if (!rot_completed){
-        rotateBehavior(90);
+        rotateBehavior(-90);
       }
     }else if (activeBehavior == 's'){
-      resetErrors();
+      
       speedBehavior(0.1,false);
+    }else if (activeBehavior == 'p'){
+      mazeBehavior();
     }else {
       motorCoast(RLMOTOR);
     }
@@ -180,7 +185,11 @@ void loop(){
       //TODO Arreglar el mostrar PID
     }else  if (screenShow =='e'){
       displayENC(encoderR,encoderL,readDistance(), readAngle(), speedR, speedL);
-    } else {
+    }else  if (screenShow =='d'){
+      displayDistances(distFL, distFR, distCL, distCR);
+        
+    }
+     else {
       displayGyro(gyroArray);
     }
   }
@@ -205,6 +214,8 @@ void loop(){
         screenShow = 'a';
       }else if (read =='g'){
         screenShow = 'g';
+      }else if (read =='d'){
+        screenShow = 'd';
       }else if (read =='r'){
         encoderReset();
       }
@@ -227,8 +238,15 @@ void loop(){
         }else if (read == 'r'){
           encoderReset();
           resetErrors();
+          posX = 0;
+          posY = 0;
+          absoluteOrientation = NORTH;
           activeBehavior = 'r';
           rot_completed = false;
+        }else if (read == 'p'){
+          encoderReset();
+          resetErrors();
+          activeBehavior = 'p';
         }
       }
       Serial1.readString(2);
@@ -248,7 +266,63 @@ void loop(){
 
 
 
-
+void path(){
+  
+  if (finishBehavior){
+    Serial1.println("FINISH BEHAVIOR");
+    encoderReset();
+    resetErrors();    
+    finishBehavior = false;
+    
+    state++;
+  }else{
+      switch(state){
+        Serial1.println("State");
+        case 1:
+          distanceBehavior(CAS*4);
+          break;
+        case 2:
+          rotateBehavior(-90);
+          break;
+        case 3:
+          distanceBehavior(CAS);
+          break;
+        case 4:
+          rotateBehavior(90);
+          break;
+        case 5:
+          distanceBehavior(CAS);
+          break;
+        case 6:
+          rotateBehavior(180);
+          break;
+        case 7:
+          distanceBehavior(CAS);
+          break;
+        case 8:
+          rotateBehavior(-90);
+          break;
+        case 9:
+          distanceBehavior(CAS);
+          break;
+        case 10:
+          rotateBehavior(90);
+          break;
+        case 11:
+          distanceBehavior(CAS*4);
+          break;
+        default:
+          finishBehavior = false;
+          state = 0;
+          activeBehavior = 'o';
+        break;
+      }
+    
+      
+  }
+  
+  
+}
 
 
 /** 
