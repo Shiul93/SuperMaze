@@ -13,5 +13,6 @@ extern void displayInt(int data);
 extern void setupScreen();
 void displayString (char * s);
 void displayDistances(double FL, double FR, double CL, double CR);
-    
+void displayTile(byte tile);
+   
 #endif

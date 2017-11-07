@@ -30,7 +30,7 @@
 #define DIST_KD 0.15
 #define DIST_ALMOST 5
 #define DIST_SPEED_LIMIT_LOW 30
-#define DIST_SPEED_LIMIT_HIGH 150
+#define DIST_SPEED_LIMIT_HIGH 100
 
 #define MAPSIZEX 16
 #define MAPSIZEY 16
@@ -77,6 +77,7 @@ extern int nextLabState;
 extern int posX;
 extern int posY;
 extern byte absoluteOrientation;
+extern byte mazemap[16][16];
 
     
 #endif

@@ -4,6 +4,7 @@
 #include "encoders.h"
 #include "utils.h"
 #include "sensors.h"
+#include "screen.h"
 
 double  g_errP, g_errI, g_errD, g_lastErr = 0;
 
@@ -337,10 +338,10 @@ void labBehavior(){
           distanceBehavior(180);
           break;
         case 1:
-          rotateBehavior(90);
+          rotateBehavior(90);//LEFT
           break;
         case 2:
-          rotateBehavior(-90);
+          rotateBehavior(-90);//RIGHT
           break;
         case 3:
           rotateBehavior(180);
@@ -362,7 +363,7 @@ void labBehavior(){
 
 
 void updateWalls(){
-  //mazemap[posX][posY]=  mazemap[posX][posY]|VISITED;  
+  mazemap[posX][posY]=  mazemap[posX][posY]|VISITED;  
   int frontDist = (distFL>0)&(distFR>0)? (distFL+distFR)/2 : 0;
   int frontCas = frontDist / 180;
 
@@ -372,21 +373,26 @@ void updateWalls(){
       mazemap[posX][posY+frontCas] =frontDist > 0? mazemap[posX][posY+frontCas]|NORTH : mazemap[posX][posY+frontCas];
       mazemap[posX][posY+frontCas+1] =frontDist > 0? mazemap[posX][posY+frontCas+1]|NORTH : mazemap[posX][posY+frontCas+1];
       
-      if (distCL < 200){
+      if ((distCL < 200)&&(distCL > 0)){
         mazemap[posX][posY+1] = mazemap[posX][posY+1]|WEST;
+        //mazemap[posX+1][posY+1 ] = mazemap[posX+1][posY+1]|EAST;
+        
       }
-      if (distCR < 200){
-        mazemap[posX][posY+1] = mazemap[posX][posY+1]|EAST; 
+      if ((distCR < 200)&&(distCR > 0)){
+        mazemap[posX][posY+1] = mazemap[posX][posY+1]|EAST;
+         
+        //mazemap[posX-1][posY+1] = mazemap[posX-1][posY+1]|WEST;
+        
       }
     break;
     case SOUTH:
       mazemap[posX][posY-frontCas] = frontDist > 0?mazemap[posX][posY-frontCas]|SOUTH : mazemap[posX][posY-frontCas];
       mazemap[posX][posY-frontCas-1] = frontDist > 0?mazemap[posX][posY-frontCas-1]|SOUTH : mazemap[posX][posY-frontCas-1];
       
-      if (distCL < 200){
+      if ((distCL < 200)&&(distCL > 0)){
         mazemap[posX][posY-1] = mazemap[posX][posY-1]|EAST;
       }
-      if (distCR < 200){
+      if ((distCR < 200)&&(distCR > 0)){
         mazemap[posX][posY-1] = mazemap[posX][posY-1]|WEST; 
       }
     break;
@@ -394,10 +400,10 @@ void updateWalls(){
       mazemap[posX+frontCas][posY] =frontDist > 0? mazemap[posX+frontCas][posY]|EAST : mazemap[posX+frontCas][posY];
       mazemap[posX+frontCas+1][posY] =frontDist > 0? mazemap[posX+frontCas+1][posY]|EAST : mazemap[posX+frontCas+1][posY];
       
-      if (distCL < 200){
+      if ((distCL < 200)&&(distCL > 0)){
         mazemap[posX+1][posY] = mazemap[posX+1][posY]|NORTH;
       }
-      if (distCR < 200){
+      if ((distCR < 200)&&(distCR > 0)){
         mazemap[posX+1][posY] = mazemap[posX+1][posY]|SOUTH; 
       }
     break;
@@ -405,10 +411,10 @@ void updateWalls(){
       mazemap[posX-frontCas][posY] = frontDist > 0?mazemap[posX-frontCas][posY]|WEST : mazemap[posX-frontCas][posY];
       mazemap[posX-frontCas-1][posY] = frontDist > 0?mazemap[posX-frontCas-1][posY]|WEST : mazemap[posX-frontCas-1][posY];
       
-      if (distCL < 200){
+      if ((distCL < 200)&&(distCL > 0)){
         mazemap[posX-1][posY] = mazemap[posX-1][posY]|SOUTH;
       }
-      if (distCR < 200){
+      if ((distCR < 200)&&(distCR > 0)){
         mazemap[posX-1][posY] = mazemap[posX-1][posY]|NORTH; 
       }    
     break;
@@ -562,6 +568,7 @@ int decideMovement(){
 }
 
 void printOrientation(){
+  displayTile(mazemap[posX][posY]);
   Serial1.print("Position = ( ");
   Serial1.print(posX);
   Serial1.print(", ");

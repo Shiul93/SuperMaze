@@ -168,3 +168,30 @@ void displayString (char * s){
 
   oled.nextPage();
 }
+
+void displayTile(byte tile){
+  printHeader("-------------TILE--------------");
+  
+  if ((tile&0b0001)==0b0001){
+    oled.drawHLine(44,62,40);
+    
+  }
+  if ((tile&0b0010)==0b0010){
+    oled.drawHLine(44,22,40);
+    
+  }
+  if ((tile&0b1000)==0b1000){
+    oled.drawVLine(84,22,40);
+    
+  }
+  if ((tile&0b0100)==0b0100){
+    oled.drawVLine(44,22,40);
+    
+  }
+  if ((tile&0b10000)==0b10000){
+    oled.drawCircle(64, 42, 18);
+  }
+  
+  oled.nextPage();
+  
+}
