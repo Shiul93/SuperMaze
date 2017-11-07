@@ -77,7 +77,7 @@ extern int nextLabState;
 extern int posX;
 extern int posY;
 extern byte absoluteOrientation;
-extern byte mazemap[16][16];
+extern byte mazemap[18][18];
 
     
 #endif
