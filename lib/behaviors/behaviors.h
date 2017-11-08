@@ -32,8 +32,8 @@
 #define DIST_SPEED_LIMIT_LOW 30
 #define DIST_SPEED_LIMIT_HIGH 100
 
-#define MAPSIZEX 16
-#define MAPSIZEY 16
+#define MAPSIZEX 18
+#define MAPSIZEY 18
 
 #define NORTH   0b00000001
 #define SOUTH   0b00000010
@@ -78,6 +78,8 @@ extern int posX;
 extern int posY;
 extern byte absoluteOrientation;
 extern byte mazemap[18][18];
+extern int floodmap[18][18];
+
 
     
 #endif

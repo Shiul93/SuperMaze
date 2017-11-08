@@ -38,6 +38,8 @@ int posY = 1;
 bool rotation = false;
 int rotDir = 0;
 
+int computed = 4;
+int lastcomputed = 1;
 
 byte mazemap[18][18] = {
   {0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0},
@@ -57,9 +59,31 @@ byte mazemap[18][18] = {
   {4,8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,8},
   {4,8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,8},
   {4,10,2,2,2,2,2,2,2,2,2,2,2,2,2,2,6,8},
-  {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},  
+  {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0}  
   
   };
+
+  int floodmap[18][18] = {
+    {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1},
+    {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1},
+    {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1},
+    {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1},
+    {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1},
+    {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1},
+    {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1},
+    {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1},
+    {-1,-1,-1,-1,-1,-1,-1,-1,1,1,-1,-1,-1,-1,-1,-1,-1,-1},
+    {-1,-1,-1,-1,-1,-1,-1,-1,1,1,-1,-1,-1,-1,-1,-1,-1,-1},
+    {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1},
+    {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1},
+    {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1},
+    {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1},
+    {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1},
+    {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1},
+    {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1},
+    {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1}
+    
+    };
 
 /** 
  * @brief  Gyroscope control behavior
@@ -379,13 +403,12 @@ void updateWalls(){
       
       if ((distCL < 200)&&(distCL > 0)){
         mazemap[posX][posY+1] = mazemap[posX][posY+1]|WEST;
-        //mazemap[posX+1][posY+1 ] = mazemap[posX+1][posY+1]|EAST;
+        mazemap[posX-1][posY+1 ] = mazemap[posX-1][posY+1]|EAST;
         
       }
       if ((distCR < 200)&&(distCR > 0)){
         mazemap[posX][posY+1] = mazemap[posX][posY+1]|EAST;
-         
-        //mazemap[posX-1][posY+1] = mazemap[posX-1][posY+1]|WEST;
+        mazemap[posX+1][posY+1] = mazemap[posX+1][posY+1]|WEST;
         
       }
     break;
@@ -395,9 +418,13 @@ void updateWalls(){
       
       if ((distCL < 200)&&(distCL > 0)){
         mazemap[posX][posY-1] = mazemap[posX][posY-1]|EAST;
+        mazemap[posX+1][posY-1] = mazemap[posX+1][posY-1]|WEST; 
+        
       }
       if ((distCR < 200)&&(distCR > 0)){
         mazemap[posX][posY-1] = mazemap[posX][posY-1]|WEST; 
+        mazemap[posX-1][posY-1] = mazemap[posX-1][posY-1]|EAST; 
+        
       }
     break;
     case EAST:
@@ -406,9 +433,13 @@ void updateWalls(){
       
       if ((distCL < 200)&&(distCL > 0)){
         mazemap[posX+1][posY] = mazemap[posX+1][posY]|NORTH;
+        mazemap[posX+1][posY+1] = mazemap[posX+1][posY+1]|SOUTH; 
+        
       }
       if ((distCR < 200)&&(distCR > 0)){
         mazemap[posX+1][posY] = mazemap[posX+1][posY]|SOUTH; 
+        mazemap[posX+1][posY-1] = mazemap[posX+1][posY-1]|NORTH;
+        
       }
     break;
     case WEST:
@@ -417,9 +448,13 @@ void updateWalls(){
       
       if ((distCL < 200)&&(distCL > 0)){
         mazemap[posX-1][posY] = mazemap[posX-1][posY]|SOUTH;
+        mazemap[posX-1][posY+1] = mazemap[posX-1][posY+1]|NORTH; 
+        
       }
       if ((distCR < 200)&&(distCR > 0)){
-        mazemap[posX-1][posY] = mazemap[posX-1][posY]|NORTH; 
+        mazemap[posX-1][posY] = mazemap[posX-1][posY]|NORTH;
+        mazemap[posX-1][posY-1] = mazemap[posX-1][posY-1]|SOUTH;
+        
       }    
     break;
   }
@@ -582,17 +617,17 @@ void printOrientation(){
     case NORTH:
       Serial1.println("NORTH");
       break;
+
     case SOUTH:
       Serial1.println("SOUTH");
-    
       break;
+
     case EAST:
-    Serial1.println("EAST");
-    
+      Serial1.println("EAST");
       break;
+
     case WEST:
-    Serial1.println("WEST");
-    
+      Serial1.println("WEST");
       break;
   }
   Serial1.print("CASBYTE: ");
@@ -661,5 +696,78 @@ void setupMap(){
   mazemap[1][1] = SOUTH | EAST | WEST | VISITED;
   mazemap[2][1] = WEST;
   
+}
+
+bool hasFinished(){
+  return (((posX == 8)&&(posY == 8))|((posX == 9)&&(posY == 8))|((posX == 8)&&(posY == 9))|((posX == 9)&&(posY == 9)));
+}
+
+void cleanNotVisited(){
+  int i,j = 0;
+  for (i=0;i<MAPSIZEX;i++){
+    for (j=0;i<MAPSIZEY;i++){
+      if(!((mazemap[i][j]&VISITED)== VISITED)){
+        floodmap[i][j] = -2;
+        computed ++;
+      }
+    }
+  }
+}
+//A LO BESTIA, POR QUE PUEDO
+void computeFloodFill(){
+  bool finished = false;
+  int totalTiles = (MAPSIZEX-1)*(MAPSIZEY-1);
+  int i,j = 0;
+  while (!finished){
+    for (i=1;i<MAPSIZEX;i++){
+      for (j=1;i<MAPSIZEY;i++){
+        //check if we are on the frontier
+        if((floodmap[i][j]== lastcomputed)){
+          //check adjacent
+          if(!((mazemap[i][j]&NORTH)== NORTH)){
+            if(floodmap[i][j+1]==-1){
+              floodmap[i][j+1] = lastcomputed +1;
+              computed++;
+              if ((i==1)&&((j+1)==1)){
+                finished = true;
+              }
+            }
+          }
+          if(!((mazemap[i][j]&SOUTH)== SOUTH)){
+            if(floodmap[i][j-1]==-1){
+              floodmap[i][j-1] = lastcomputed +1;
+              computed++;
+              if ((i==1)&&((j-1)==1)){
+                finished = true;
+              }
+            }
+          }
+          if(!((mazemap[i][j]&EAST)== EAST)){
+            if(floodmap[i+1][j]==-1){
+              floodmap[i+1][j] = lastcomputed +1;
+              computed++;
+              if (((i+1)==1)&&(j==1)){
+                finished = true;
+              }
+            }
+          }
+          if(!((mazemap[i][j]& WEST)== WEST)){
+            if(floodmap[i-1][j]==-1){
+              floodmap[i-1][j] = lastcomputed +1;
+              computed++;
+              if (((i-1)==1)&&(j==1)){
+                finished = true;
+              }
+            }
+          }
+          if (computed == totalTiles){
+            finished = true;
+          }
+        }
+      }
+    }
+    lastcomputed = lastcomputed +1;
+  }
+
 }
 

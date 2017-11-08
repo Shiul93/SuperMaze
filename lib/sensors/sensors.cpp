@@ -66,9 +66,9 @@ void setupDistanceSensors() {
 
   pinMode(sensor_rst1, INPUT);
   delay(150);
-  laserFL.init(true);
+  laserFR.init(true);
   delay(100);
-  laserFL.setAddress((uint8_t)22);
+  laserFR.setAddress((uint8_t)22);
 
   pinMode(sensor_rst2, INPUT);
   delay(150);
@@ -84,9 +84,9 @@ void setupDistanceSensors() {
 
   pinMode(sensor_rst4, INPUT);
   delay(150);
-  laserFR.init(true);
+  laserFL.init(true);
   delay(100);
-  laserFR.setAddress((uint8_t)31);
+  laserFL.setAddress((uint8_t)31);
 
   laserFL.setTimeout(500);
   laserCL.setTimeout(500);
