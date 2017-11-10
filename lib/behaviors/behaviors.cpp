@@ -92,7 +92,7 @@ byte mazemap[18][18] = {
  */
 void gyroBehavior(){
   
-    int error = gyroArray[2];
+    int error = gyroArray[2]; 
     g_errP = error;
     g_errI = g_errI+error;
     g_errI = ((error*g_errI)<0) ? 0 : g_errI;
@@ -771,3 +771,87 @@ void computeFloodFill(){
 
 }
 
+byte checkResolveNextPos(){
+  int n_value = floodmap[posX][posY+1];
+  int s_value = floodmap[posX][posY-1];
+  int e_value = floodmap[posX+1][posY];
+  int w_value = floodmap[posX-1][posY];
+  int actualPos = floodmap[posX][posY];
+  
+  byte direction = NORTH;
+  direction = ((n_value > 0)&&(n_value==(actualPos-1))) ? NORTH : direction;
+  direction = ((s_value > 0)&&(s_value==(actualPos-1))) ? SOUTH : direction;
+  direction = ((e_value > 0)&&(e_value==(actualPos-1))) ? EAST : direction;
+  direction = ((w_value > 0)&&(w_value==(actualPos-1))) ? WEST : direction;
+  return direction;  
+}
+
+int calculateRotation(byte newOrientation){
+  switch (absoluteOrientation){
+    case NORTH:
+      if (newOrientation == SOUTH){
+          return 180;
+      }else if (newOrientation == EAST){
+          return -90;
+      }else if (newOrientation == WEST) {
+          return 90;
+      }
+      return 0;
+      break;
+    case SOUTH:
+      if (newOrientation == NORTH){
+          return 180;
+      }else if (newOrientation == WEST){
+          return -90;
+      }else if (newOrientation == EAST) {
+          return 90;
+      }
+      return 0;
+      break;
+    case EAST:
+        if (newOrientation == WEST){
+            return 180;
+        }else if (newOrientation == SOUTH){
+            return -90;
+        }else if (newOrientation == NORTH) {
+            return 90;
+        }
+        return 0;
+        break;   
+      break;
+    case WEST:
+      if (newOrientation == EAST){
+          return 180;
+      }else if (newOrientation == NORTH){
+          return -90;
+      }else if (newOrientation == SOUTH) {
+          return 90;
+      }
+      return 0;
+      break;
+  }
+}
+
+void resolveBehavior(){
+  
+  int rot = 0;
+  
+
+  if (finishBehavior){
+    //Serial1.println("FINISH BEHAVIOR");
+    encoderReset();
+    resetErrors();    
+    finishBehavior = false;
+    printOrientation();
+    rot = calculateRotation(checkResolveNextPos());
+     
+    
+  }else{
+    if (rot == 0){
+      distanceBehavior(180);
+    }else{
+      rotation = true;
+      rotateBehavior(rot);
+    }
+  }
+}

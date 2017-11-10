@@ -70,7 +70,11 @@ void distanceBehavior(int mm);
 void resetErrors();
 void labBehavior();
 void mazeBehavior();
+void resolveBehavior();
 void setupMap();
+bool hasFinished();
+void cleanNotVisited();
+void computeFloodFill();
 
 
 extern int nextLabState;
