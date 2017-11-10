@@ -855,3 +855,42 @@ void resolveBehavior(){
     }
   }
 }
+
+/** 
+ * @brief  Prints the actual map status
+ * @note   
+ * @retval None
+ */
+void printFloodMap(){
+  int i,j = 0;
+  for (j = MAPSIZEY-1; j>=0; i++){
+    for (i = 0; i<MAPSIZEX; i++){
+      int value = mazemap[i][j];
+      if (value>=0){
+        Serial1.print(" ");
+      }
+      Serial1.print(value);
+
+  }
+  Serial1.println("");
+  }
+}
+/** 
+ * @brief  Prints the actual floodfill map
+ * @note   
+ * @retval None
+ */
+void printMap(){
+  int i,j = 0;
+  for (j = MAPSIZEY-1; j>=0; i++){
+    for (i = 0; i<MAPSIZEX; i++){
+      int value = floodmap[i][j];
+      if (value>0){
+        Serial1.print(" ");
+      }
+      Serial1.print(value);
+
+  }
+  Serial1.println("");
+  }
+}

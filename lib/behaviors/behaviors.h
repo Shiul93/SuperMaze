@@ -75,6 +75,8 @@ void setupMap();
 bool hasFinished();
 void cleanNotVisited();
 void computeFloodFill();
+void printMap();
+void printFloodMap();
 
 
 extern int nextLabState;
