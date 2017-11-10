@@ -111,7 +111,9 @@ void setup(){
   digitalWrite(buzzer_pin, LOW);
   delay(100);
   displayString("Startup OK");
-
+  printMap();
+  Serial1.println("\n\n");
+  printFloodMap();
 
 
   updateDistances();
@@ -137,6 +139,17 @@ void encoderFun(){
   //Serial1.printf("Enc L: %i, Enc R: %i, Distance %i, Angle %i \n",encoderL,encoderR,readDistance(),readAngle());
 
 }
+
+void blinkBT(){
+  strip.setPixelColor(0, 0, 0, 10);
+      strip.setPixelColor(1, 0, 0, 10);
+      strip.show();
+      delay(100);
+      strip.setPixelColor(0, 0, 0, 0);
+      strip.setPixelColor(1, 0, 0, 0);
+      strip.show();
+};
+
 void loop(){
 
 
@@ -165,7 +178,7 @@ void loop(){
       }
     }else if (activeBehavior == 's'){
       
-      speedBehavior(0.1,false);
+      resolveBehavior();
     }else if (activeBehavior == 'm'){
       mazeBehavior();
     }else {
@@ -197,17 +210,12 @@ void loop(){
     }
   }
 
+
   if(longCount>= (1000/3)*sysTickMilisPeriod)//3200ms
   {
     longCount = 0;
     if (Serial1.available()){
-      strip.setPixelColor(0, 0, 0, 10);
-      strip.setPixelColor(1, 0, 0, 10);
-      strip.show();
-      delay(100);
-      strip.setPixelColor(0, 0, 0, 0);
-      strip.setPixelColor(1, 0, 0, 0);
-      strip.show();
+      blinkBT();
       String read = Serial1.readString(1);
       if (read =='p'){
         screenShow = 'p';
@@ -284,6 +292,7 @@ void printDistances(){
 
   Serial.println();
 }
+
 
 
 

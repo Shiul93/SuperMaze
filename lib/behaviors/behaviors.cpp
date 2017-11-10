@@ -705,7 +705,7 @@ bool hasFinished(){
 void cleanNotVisited(){
   int i,j = 0;
   for (i=0;i<MAPSIZEX;i++){
-    for (j=0;i<MAPSIZEY;i++){
+    for (j=0;j<MAPSIZEY;j++){
       if(!((mazemap[i][j]&VISITED)== VISITED)){
         floodmap[i][j] = -2;
         computed ++;
@@ -720,7 +720,7 @@ void computeFloodFill(){
   int i,j = 0;
   while (!finished){
     for (i=1;i<MAPSIZEX;i++){
-      for (j=1;i<MAPSIZEY;i++){
+      for (j=1;j<MAPSIZEY;j++){
         //check if we are on the frontier
         if((floodmap[i][j]== lastcomputed)){
           //check adjacent
@@ -863,10 +863,10 @@ void resolveBehavior(){
  */
 void printFloodMap(){
   int i,j = 0;
-  for (j = MAPSIZEY-1; j>=0; i++){
+  for (j = MAPSIZEY-1; j>=0; j--){
     for (i = 0; i<MAPSIZEX; i++){
       int value = mazemap[i][j];
-      if (value>=0){
+      if (value<10){
         Serial1.print(" ");
       }
       Serial1.print(value);
@@ -882,7 +882,7 @@ void printFloodMap(){
  */
 void printMap(){
   int i,j = 0;
-  for (j = MAPSIZEY-1; j>=0; i++){
+  for (j = MAPSIZEY-1; j>=0; j--){
     for (i = 0; i<MAPSIZEX; i++){
       int value = floodmap[i][j];
       if (value>0){
